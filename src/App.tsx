@@ -8,9 +8,15 @@ import Index from "./pages/Index";
 import Departments from "./pages/Departments";
 import DepartmentDetail from "./pages/DepartmentDetail";
 import Employees from "./pages/Employees";
+import EmployeeDetail from "./pages/EmployeeDetail";
 import Trainings from "./pages/Trainings";
 import TrainingDetail from "./pages/TrainingDetail";
 import Sessions from "./pages/Sessions";
+import SessionDetail from "./pages/SessionDetail";
+import AddEmployeeToSession from "./pages/AddEmployeeToSession";
+import Feedback from "./pages/Feedback";
+import Statistics from "./pages/Statistics";
+import GiveFeedback from "./pages/GiveFeedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,9 +32,15 @@ const App = () => (
           <Route path="/departments" element={<Departments />} />
           <Route path="/departments/:id" element={<DepartmentDetail />} />
           <Route path="/employees" element={<Employees />} />
+          <Route path="/employees/:id" element={<EmployeeDetail />} />
           <Route path="/trainings" element={<Trainings />} />
           <Route path="/trainings/:id" element={<TrainingDetail />} />
           <Route path="/sessions" element={<Sessions />} />
+          <Route path="/sessions/:id" element={<SessionDetail />} />
+          <Route path="/add-employee-session" element={<AddEmployeeToSession />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/statistics" element={<Statistics />} />
+          <Route path="/give-feedback" element={<GiveFeedback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
