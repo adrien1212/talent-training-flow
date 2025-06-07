@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ interface Training {
 
 const Trainings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [trainings, setTrainings] = useState<Training[]>([
     { id: 1, name: "Sécurité au travail", description: "Formation obligatoire sur les règles de sécurité", department: "Production", duration: 8, maxParticipants: 20, sessionsCount: 3, status: 'active' },
     { id: 2, name: "Management d'équipe", description: "Techniques de management et leadership", department: "Ressources Humaines", duration: 16, maxParticipants: 12, sessionsCount: 2, status: 'active' },
@@ -246,7 +247,9 @@ const Trainings = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="h-5 w-5 text-purple-600" />
-                        <CardTitle className="text-lg">{training.name}</CardTitle>
+                        <CardTitle className="text-lg cursor-pointer hover:text-purple-600" onClick={() => navigate(`/trainings/${training.id}`)}>
+                          {training.name}
+                        </CardTitle>
                       </div>
                       <div className="flex gap-1">
                         <Button
@@ -301,6 +304,16 @@ const Trainings = () => {
                         <Badge variant={training.status === 'active' ? 'default' : 'secondary'}>
                           {training.status === 'active' ? 'Active' : 'Inactive'}
                         </Badge>
+                      </div>
+                      <div className="pt-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/trainings/${training.id}`)}
+                          className="w-full"
+                        >
+                          Voir les détails
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

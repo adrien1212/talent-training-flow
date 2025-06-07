@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ interface Department {
 
 const Departments = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [departments, setDepartments] = useState<Department[]>([
     { id: 1, name: "Ressources Humaines", description: "Gestion du personnel et recrutement", manager: "Marie Dubois", employeeCount: 8 },
     { id: 2, name: "Production", description: "Fabrication et assemblage des produits", manager: "Jean Martin", employeeCount: 45 },
@@ -181,7 +182,9 @@ const Departments = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-blue-600" />
-                        <CardTitle className="text-lg">{department.name}</CardTitle>
+                        <CardTitle className="text-lg cursor-pointer hover:text-blue-600" onClick={() => navigate(`/departments/${department.id}`)}>
+                          {department.name}
+                        </CardTitle>
                       </div>
                       <div className="flex gap-1">
                         <Button
@@ -216,6 +219,16 @@ const Departments = () => {
                           <Users className="h-3 w-3" />
                           {department.employeeCount}
                         </Badge>
+                      </div>
+                      <div className="pt-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/departments/${department.id}`)}
+                          className="w-full"
+                        >
+                          Voir les détails
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
