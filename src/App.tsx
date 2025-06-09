@@ -41,6 +41,9 @@ const App = () => (
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/give-feedback" element={<GiveFeedback />} />
+          <Route path="/signature/:accessToken" element={<SessionSignature />} />
+          <Route path="/espace-formateur/:trainingAccessToken" element={<TrainerSpace />} />
+          <Route path="/espace-etudiants" element={<StudentSpace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
