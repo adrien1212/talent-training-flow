@@ -51,6 +51,21 @@ const navigationItems = [
     url: "/sessions",
     icon: Calendar,
   },
+  {
+    title: "Feedbacks",
+    url: "/feedbacks",
+    icon: Calendar,
+  },
+  {
+    title: "Statistiques",
+    url: "/statistics",
+    icon: Calendar,
+  },
+  {
+    title: "Give feedback",
+    url: "/give-feedback",
+    icon: Calendar,
+  },
 ];
 
 export function AppSidebar() {

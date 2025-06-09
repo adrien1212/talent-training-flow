@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,46 +12,70 @@ import { GraduationCap, Plus, Edit, Trash2, Clock, Users, Calendar } from "lucid
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
-
-interface Training {
-  id: number;
-  name: string;
-  description: string;
-  department: string;
-  duration: number; // in hours
-  maxParticipants: number;
-  sessionsCount: number;
-  status: 'active' | 'inactive';
-}
+import api from "@/services/api";
+import { Training } from "@/types/Training";
+import { Department } from "@/types/Department";
+import { useNavigate } from "react-router-dom";
 
 const Trainings = () => {
   const { toast } = useToast();
-  const [trainings, setTrainings] = useState<Training[]>([
-    { id: 1, name: "Sécurité au travail", description: "Formation obligatoire sur les règles de sécurité", department: "Production", duration: 8, maxParticipants: 20, sessionsCount: 3, status: 'active' },
-    { id: 2, name: "Management d'équipe", description: "Techniques de management et leadership", department: "Ressources Humaines", duration: 16, maxParticipants: 12, sessionsCount: 2, status: 'active' },
-    { id: 3, name: "Formation Excel", description: "Maîtrise d'Excel niveau avancé", department: "Comptabilité", duration: 12, maxParticipants: 15, sessionsCount: 4, status: 'active' },
-    { id: 4, name: "Techniques de vente", description: "Améliorer ses techniques commerciales", department: "Marketing", duration: 20, maxParticipants: 10, sessionsCount: 1, status: 'inactive' },
-  ]);
+  const navigate = useNavigate();
 
-  const departments = ["Production", "Ressources Humaines", "Comptabilité", "Marketing", "IT", "Ventes"];
+  const [trainings, setTrainings] = useState<Training[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     description: "",
-    department: "",
+    provider: "",
+    departmentIds: [] as number[],
     duration: 0,
     maxParticipants: 0,
     status: 'active' as 'active' | 'inactive'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await api.get('v1/departments');
+        setDepartments(res.data.content);
+      } catch {
+        // todo
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
+  useEffect(() => {
+    const fetchTrainings = async () => {
+      try {
+        const res = await api.get('v1/trainings');
+        setTrainings(res.data.content);
+      } catch {
+        // todo
+      }
+    };
+
+    fetchTrainings();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Build payload matching your DTO:
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      provider: formData.provider,
+      departmentIds: formData.departmentIds
+    };
+
     if (editingTraining) {
-      setTrainings(trainings.map(training => 
-        training.id === editingTraining.id 
+      setTrainings(trainings.map(training =>
+        training.id === editingTraining.id
           ? { ...training, ...formData }
           : training
       ));
@@ -60,12 +84,12 @@ const Trainings = () => {
         description: "Les informations de la formation ont été mises à jour avec succès.",
       });
     } else {
-      const newTraining: Training = {
-        id: Math.max(...trainings.map(t => t.id)) + 1,
-        ...formData,
-        sessionsCount: 0
-      };
-      setTrainings([...trainings, newTraining]);
+      const res = await api.post('v1/trainings', payload);
+
+      const created: Training = res.data;
+
+      console.log(created)
+      setTrainings([...trainings, created]);
       toast({
         title: "Formation créée",
         description: "La nouvelle formation a été créée avec succès.",
@@ -73,9 +97,10 @@ const Trainings = () => {
     }
 
     setFormData({
-      name: "",
+      title: "",
       description: "",
-      department: "",
+      provider: "",
+      departmentIds: [],
       duration: 0,
       maxParticipants: 0,
       status: 'active'
@@ -87,9 +112,10 @@ const Trainings = () => {
   const handleEdit = (training: Training) => {
     setEditingTraining(training);
     setFormData({
-      name: training.name,
+      title: training.title,
       description: training.description,
-      department: training.department,
+      provider: training.provider,
+      departmentIds: training.departments.map(d => d.id),
       duration: training.duration,
       maxParticipants: training.maxParticipants,
       status: training.status
@@ -109,9 +135,10 @@ const Trainings = () => {
   const openCreateDialog = () => {
     setEditingTraining(null);
     setFormData({
-      name: "",
+      title: "",
       description: "",
-      department: "",
+      provider: "",
+      departmentIds: [],
       duration: 0,
       maxParticipants: 0,
       status: 'active'
@@ -146,7 +173,7 @@ const Trainings = () => {
                       {editingTraining ? "Modifier la formation" : "Créer une nouvelle formation"}
                     </DialogTitle>
                     <DialogDescription>
-                      {editingTraining 
+                      {editingTraining
                         ? "Modifiez les informations de la formation ci-dessous."
                         : "Remplissez les informations pour créer une nouvelle formation."
                       }
@@ -157,8 +184,8 @@ const Trainings = () => {
                       <Label htmlFor="name">Nom de la formation</Label>
                       <Input
                         id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         placeholder="Ex: Sécurité au travail"
                         required
                       />
@@ -174,17 +201,28 @@ const Trainings = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="department">Département cible</Label>
-                      <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un département" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Dépendances cibles</Label>
+                      <div className="space-y-2 mt-1">
+                        {departments.map((dept) => (
+                          <div key={dept.id} className="flex items-center">
+                            <input
+                              id={`dept-${dept.id}`}
+                              type="checkbox"
+                              checked={formData.departmentIds.includes(dept.id)}
+                              onChange={(e) => {
+                                const newIds = e.target.checked
+                                  ? [...formData.departmentIds, dept.id]
+                                  : formData.departmentIds.filter((id) => id !== dept.id);
+                                setFormData({ ...formData, departmentIds: newIds });
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                            />
+                            <Label htmlFor={`dept-${dept.id}`} className="ml-2 text-gray-700">
+                              {dept.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -246,7 +284,9 @@ const Trainings = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="h-5 w-5 text-purple-600" />
-                        <CardTitle className="text-lg">{training.name}</CardTitle>
+                        <CardTitle className="text-lg cursor-pointer hover:text-purple-600" onClick={() => navigate(`/trainings/${training.id}`)}>
+                          {training.title}
+                        </CardTitle>
                       </div>
                       <div className="flex gap-1">
                         <Button
@@ -271,9 +311,15 @@ const Trainings = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Département</span>
-                        <Badge variant="outline">{training.department}</Badge>
+                      <div className="flex items-start justify-between">
+                        <span className="text-sm text-gray-600">Départements</span>
+                        <div className="flex flex-wrap gap-1">
+                          {training.departments.map((department) => (
+                            <Badge key={department.id} variant="outline">
+                              {department.name}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600 flex items-center gap-1">
@@ -301,6 +347,16 @@ const Trainings = () => {
                         <Badge variant={training.status === 'active' ? 'default' : 'secondary'}>
                           {training.status === 'active' ? 'Active' : 'Inactive'}
                         </Badge>
+                      </div>
+                      <div className="pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/trainings/${training.id}`)}
+                          className="w-full"
+                        >
+                          Voir les détails
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

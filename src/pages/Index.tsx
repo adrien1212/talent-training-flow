@@ -1,49 +1,123 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Building2, GraduationCap, Calendar } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import api from "@/services/api";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
+import { SessionDetail } from "@/types/SessionDetail";
 
 const Index = () => {
-  // Mock data for dashboard stats
-  const stats = [
+  // 1) Set up state to hold the array of stat-objects
+  const [recentSessions, setRecentSessions] = useState<SessionDetail[]>([]);
+  const [stats, setStats] = useState([
+    // you can keep these as placeholders (or start with an empty array: [])
     {
       title: "Total Employés",
-      value: "248",
+      value: "--",
       description: "Actifs dans l'entreprise",
       icon: Users,
-      color: "text-blue-600"
+      color: "text-blue-600",
     },
     {
       title: "Départements",
-      value: "12",
+      value: "--",
       description: "Départements actifs",
       icon: Building2,
-      color: "text-green-600"
+      color: "text-green-600",
     },
     {
       title: "Formations",
-      value: "34",
+      value: "--",
       description: "Formations disponibles",
       icon: GraduationCap,
-      color: "text-purple-600"
+      color: "text-purple-600",
     },
     {
       title: "Sessions",
-      value: "89",
+      value: "--",
       description: "Sessions programmées",
       icon: Calendar,
-      color: "text-orange-600"
-    }
-  ];
+      color: "text-orange-600",
+    },
+  ]);
 
-  const recentTrainings = [
-    { id: 1, name: "Sécurité au travail", department: "Production", date: "2024-06-10", participants: 15 },
-    { id: 2, name: "Management d'équipe", department: "RH", date: "2024-06-12", participants: 8 },
-    { id: 3, name: "Formation Excel", department: "Comptabilité", date: "2024-06-15", participants: 12 }
-  ];
+  // 2) On mount, fetch the real numbers from the API
+  useEffect(() => {
+    const fetchGlobalStats = async () => {
+      try {
+        // Call your backend endpoint
+        const response = await api.get("/v1/statistics/global");
+        // Assuming the response.data has this shape:
+        // {
+        //   totalEmployees: number,
+        //   totalDepartments: number,
+        //   totalTrainings: number,
+        //   totalSessions: number
+        // }
+        const data = response.data;
+
+        // 3) Remap fields into the same shape that your <Card> loop expects
+        //    (i.e. title, value, description, icon, color).
+        const newStats = [
+          {
+            title: "Total Employés",
+            value: data.totalEmployees.toString(),
+            description: "Actifs dans l'entreprise",
+            icon: Users,
+            color: "text-blue-600",
+          },
+          {
+            title: "Départements",
+            value: data.totalDepartments.toString(),
+            description: "Départements actifs",
+            icon: Building2,
+            color: "text-green-600",
+          },
+          {
+            title: "Formations",
+            value: data.totalTrainings.toString(),
+            description: "Formations disponibles",
+            icon: GraduationCap,
+            color: "text-purple-600",
+          },
+          {
+            title: "Sessions",
+            value: data.totalSessions.toString(),
+            description: "Sessions programmées",
+            icon: Calendar,
+            color: "text-orange-600",
+          },
+        ];
+
+        setStats(newStats);
+      } catch (err) {
+        console.error("Erreur lors du fetch des statistiques globales :", err);
+        // Optionnel : garder les valeurs "--" ou afficher un message d'erreur à l'utilisateur
+      }
+    };
+
+    fetchGlobalStats();
+  }, []); // <-- appelé une seule fois au montage
+
+  // 4) The rest of your component stays the same; it just maps over `stats`
+  //    (which now comes from the API instead of being hard-coded).
+  useEffect(() => {
+    const fetchRecentSessions = async () => {
+      try {
+        const response = await api.get("/v1/sessions?sessionStatus=COMPLETED");
+        setRecentSessions(response.data.content);
+        console.log(recentSessions)
+      } catch {
+        
+      }
+    };
+
+    fetchRecentSessions();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -63,7 +137,7 @@ const Index = () => {
           </header>
 
           <div className="p-6 space-y-6">
-            {/* Statistics Cards */}
+            {/* Statistics Cards (dynamically from `stats`) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.map((stat, index) => (
                 <Card key={index} className="transition-all hover:shadow-lg hover:-translate-y-1">
@@ -81,7 +155,7 @@ const Index = () => {
               ))}
             </div>
 
-            {/* Recent Trainings */}
+            {/* Recent Trainings (unchanged) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -94,15 +168,18 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {recentTrainings.map((training) => (
-                    <div key={training.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  {recentSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{training.name}</h3>
-                        <p className="text-sm text-gray-600">{training.department}</p>
+                        <h3 className="font-medium text-gray-900">{session.startDate}</h3>
+                        <p className="text-sm text-gray-600">{session.startDate}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-medium text-gray-900">{training.date}</p>
-                        <p className="text-xs text-gray-600">{training.participants} participants</p>
+                        <p className="text-sm font-medium text-gray-900">{session.startDate}</p>
+                        <p className="text-xs text-gray-600">{session.startDate} participants</p>
                       </div>
                     </div>
                   ))}
@@ -115,7 +192,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (unchanged) */}
             <Card>
               <CardHeader>
                 <CardTitle>Actions Rapides</CardTitle>

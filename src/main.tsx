@@ -1,5 +1,17 @@
 import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
 import './index.css'
+import App from './App.tsx'
+import { BrowserRouter } from 'react-router-dom'
+import { ReactKeycloakProvider } from '@react-keycloak/web'
+import keycloak from "./Keycloak"
+import { QueryClient, QueryClientProvider } from 'react-query'
 
-createRoot(document.getElementById("root")!).render(<App />);
+const queryClient = new QueryClient();
+
+createRoot(document.getElementById('root')!).render(
+    <ReactKeycloakProvider authClient={keycloak}>
+        <QueryClientProvider client={queryClient}>
+            <App />
+        </QueryClientProvider>
+    </ReactKeycloakProvider>
+)

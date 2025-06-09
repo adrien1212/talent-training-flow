@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Building2, Users, Plus, Edit, Trash2 } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
+import { useDepartments } from "@/hooks/useDepartments";
 
 interface Department {
   id: number;
@@ -22,12 +23,9 @@ interface Department {
 
 const Departments = () => {
   const { toast } = useToast();
-  const [departments, setDepartments] = useState<Department[]>([
-    { id: 1, name: "Ressources Humaines", description: "Gestion du personnel et recrutement", manager: "Marie Dubois", employeeCount: 8 },
-    { id: 2, name: "Production", description: "Fabrication et assemblage des produits", manager: "Jean Martin", employeeCount: 45 },
-    { id: 3, name: "Comptabilité", description: "Gestion financière et comptable", manager: "Sophie Leroy", employeeCount: 12 },
-    { id: 4, name: "Marketing", description: "Promotion et communication", manager: "Pierre Moreau", employeeCount: 15 },
-  ]);
+  const navigate = useNavigate();
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
@@ -37,63 +35,26 @@ const Departments = () => {
     manager: ""
   });
 
+  // — READ
+  const {
+    data: departments,
+    isLoading,
+    isError,
+    error
+  } = useDepartments({ page, size: pageSize })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (editingDepartment) {
-      // Update existing department
-      setDepartments(departments.map(dept => 
-        dept.id === editingDepartment.id 
-          ? { ...dept, ...formData }
-          : dept
-      ));
-      toast({
-        title: "Département modifié",
-        description: "Les informations du département ont été mises à jour avec succès.",
-      });
-    } else {
-      // Create new department
-      const newDepartment: Department = {
-        id: Math.max(...departments.map(d => d.id)) + 1,
-        ...formData,
-        employeeCount: 0
-      };
-      setDepartments([...departments, newDepartment]);
-      toast({
-        title: "Département créé",
-        description: "Le nouveau département a été ajouté avec succès.",
-      });
-    }
-
-    setFormData({ name: "", description: "", manager: "" });
-    setEditingDepartment(null);
-    setIsDialogOpen(false);
-  };
-
-  const handleEdit = (department: Department) => {
-    setEditingDepartment(department);
-    setFormData({
-      name: department.name,
-      description: department.description,
-      manager: department.manager
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (id: number) => {
-    setDepartments(departments.filter(dept => dept.id !== id));
-    toast({
-      title: "Département supprimé",
-      description: "Le département a été supprimé avec succès.",
-      variant: "destructive",
-    });
-  };
+  }
 
   const openCreateDialog = () => {
     setEditingDepartment(null);
     setFormData({ name: "", description: "", manager: "" });
     setIsDialogOpen(true);
   };
+
+  if (isLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>;
+  if (isError) return <div className="p-4 text-center text-red-500">Erreur : {error?.message}</div>;
 
   return (
     <SidebarProvider>
@@ -122,7 +83,7 @@ const Departments = () => {
                       {editingDepartment ? "Modifier le département" : "Créer un nouveau département"}
                     </DialogTitle>
                     <DialogDescription>
-                      {editingDepartment 
+                      {editingDepartment
                         ? "Modifiez les informations du département ci-dessous."
                         : "Remplissez les informations pour créer un nouveau département."
                       }
@@ -175,47 +136,41 @@ const Departments = () => {
 
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {departments.map((department) => (
+              {departments.content.map((department) => (
                 <Card key={department.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-blue-600" />
-                        <CardTitle className="text-lg">{department.name}</CardTitle>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(department)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(department.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <CardTitle className="text-lg cursor-pointer hover:text-blue-600" onClick={() => navigate(`/departments/${department.id}`)}>
+                          {department.name}
+                        </CardTitle>
                       </div>
                     </div>
-                    <CardDescription>{department.description}</CardDescription>
+                    <CardDescription>{department.name}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Responsable</span>
-                        <span className="font-medium">{department.manager}</span>
+                        <span className="font-medium">{department.name}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Employés</span>
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
-                          {department.employeeCount}
+                          {department.name}
                         </Badge>
+                      </div>
+                      <div className="pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/departments/${department.id}`)}
+                          className="w-full"
+                        >
+                          Voir les détails
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
