@@ -79,7 +79,7 @@ const EmployeeDetail = () => {
                                 </Avatar>
                                 <div>
                                     <h1 className="text-2xl font-bold text-gray-900">
-                                        {employee.firstName} {employee.lastName}
+                                        {employee.firstName} {employee.lastName} - {employee.codeEmployee}
                                     </h1>
                                     <p className="text-gray-600">{employee.department.name} - {employee.department.name}</p>
                                 </div>

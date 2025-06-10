@@ -39,6 +39,15 @@ function EnrollmentsTable({ items, page, totalPages, loading, showSessionStatus,
         return <Badge className={cfg.style}>{cfg.label}</Badge>;
     };
 
+    const getSignatureBadge = (status: SessionEnrollment['hasSigned']) => {
+        const variants = {
+            signed: { color: "bg-green-100 text-green-800", label: "Signée" },
+            pending: { color: "bg-orange-100 text-orange-800", label: "En attente" }
+        };
+        const config = status ? variants.signed : variants.pending
+        return <Badge className={config.color}>{config.label}</Badge>;
+    };
+
     return (
         <>
             <Table>
@@ -47,7 +56,8 @@ function EnrollmentsTable({ items, page, totalPages, loading, showSessionStatus,
                         <TableHead>Participant</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Complété</TableHead>
+                        <TableHead>Feedback donné</TableHead>
+                        <TableHead>Signé</TableHead>
                         {showSessionStatus && (
                             <TableHead>Session</TableHead>
                         )}
@@ -55,9 +65,9 @@ function EnrollmentsTable({ items, page, totalPages, loading, showSessionStatus,
                 </TableHeader>
                 <TableBody>
                     {items.map(item => {
-                        const config = item.completed
-                            ? { color: 'bg-green-100 text-green-800', label: 'terminé' }
-                            : { color: 'bg-orange-100 text-orange-800', label: 'en attente' };
+                        const config = item.hasFeedback
+                            ? { color: 'bg-green-100 text-green-800', label: 'oui' }
+                            : { color: 'bg-red-100 text-orange-800', label: 'non' };
                         return (
                             <TableRow key={item.id} className="cursor-pointer hover:text-blue-600" onClick={() => navigate(`/employees/${item.id}`)}>
                                 <TableCell>
@@ -80,6 +90,9 @@ function EnrollmentsTable({ items, page, totalPages, loading, showSessionStatus,
                                     <Badge className={config.color}>
                                         {config.label}
                                     </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    {getSignatureBadge(item.hasSigned)}
                                 </TableCell>
                                 {showSessionStatus && (
                                     <TableCell>{getStatusBadge(item.session.status)}</TableCell>

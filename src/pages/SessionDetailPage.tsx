@@ -16,6 +16,7 @@ import FeedbackTabs from "@/components/common/FeedbackTabs";
 import FeedbackPending from "@/components/common/FeedbackPending";
 import SessionEnrollmentCard from "@/components/common/SessionEnrollmentTable";
 import { useSession } from "@/hooks/useSessions";
+import SignatureMatrix from "@/components/common/SignatureMatrix";
 
 const SessionDetailPage = () => {
     const { id } = useParams();
@@ -114,6 +115,8 @@ const SessionDetailPage = () => {
 
                         {/* Liste des participants */}
                         <SessionEnrollmentCard sessionId={Number(id)} />
+
+                        <SignatureMatrix sessionId={Number(id)} />
 
                         {/* Avis (si session terminée) */}
                         {session.status === SessionStatus.Completed && (

@@ -8,7 +8,7 @@ import { SessionStatus } from '@/types/SessionStatus';
 import { NewSession } from '@/types/NewSession';
 
 export interface UseSessionsOptions {
-    trainingId?: number;
+    trainingId?: number; // quand on crée une session
     sessionStatus?: SessionStatus;
     page?: number;
     size?: number;

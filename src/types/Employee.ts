@@ -7,4 +7,5 @@ export interface Employee {
   email: string;
   phone: string;
   department: Department;
+  codeEmployee: string
 }

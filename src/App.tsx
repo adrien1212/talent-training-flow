@@ -19,6 +19,9 @@ import GiveFeedback from "./pages/GiveFeedback";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import AddEmployeeToSession from "./pages/AddEmployeeToSession";
 import SessionDetailPage from "./pages/SessionDetailPage";
+import SessionSignature from "./pages/SessionSignature";
+import TrainerSpace from "./pages/TrainerSpace";
+import StudentSpace from "./pages/StudentSpace";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +52,9 @@ const App = () => (
             <Route path="/feedbacks" element={<Feedbacks />} />
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/give-feedback" element={<GiveFeedback />} />
+            <Route path="/signature/:employeeAccessToken" element={<SessionSignature />} />
+            <Route path="/espace-formateur/:trainingAccessToken" element={<TrainerSpace />} />
+            <Route path="/espace-etudiants" element={<StudentSpace />} />
           </Route>
         </Routes>
       </BrowserRouter>

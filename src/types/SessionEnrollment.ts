@@ -5,7 +5,8 @@ export interface SessionEnrollment {
   id: number;
   session: SessionDetail;
   employee: Employee;
-  completed: boolean;
+  hasFeedback: boolean;
+  hasSigned: boolean
   feedback?: {
     id: number;
     rating: number;

@@ -95,6 +95,7 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
                         <TableRow>
                             <TableHead>Employé</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Code Employé</TableHead>
                             <TableHead>Téléphone</TableHead>
                             <TableHead>Département</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -123,6 +124,12 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
                                     <div className="flex items-center gap-2">
                                         <Mail className="h-4 w-4" />
                                         {emp.email}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-4 w-4" />
+                                        {emp.codeEmployee}
                                     </div>
                                 </TableCell>
                                 <TableCell>

@@ -1,4 +1,3 @@
-// components/SessionEnrollmentTabs.tsx
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -18,17 +17,37 @@ const TABS = [
     { key: 'scheduled', label: 'Programmé', status: SessionStatus.NotStarted, showSessionStatus: false },
 ] as const;
 
-const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId, sessionId }) => {
-    const [pageByTab, setPageByTab] = useState<Record<string, number>>({
+type TabKey = typeof TABS[number]['key'];
+
+const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId }) => {
+    const [activeTab, setActiveTab] = useState<TabKey>('all');
+    const [pageByTab, setPageByTab] = useState<Record<TabKey, number>>({
         all: 0,
         current: 0,
         completed: 0,
         scheduled: 0,
     });
-    const activeTabDefault = 'all';
+
+    // Prepare queries for each tab
+    const allEnrollments = useSessionEnrollments({ trainingId, status: null, page: pageByTab.all });
+    const currentEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.Active, page: pageByTab.current });
+    const completedEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.Completed, page: pageByTab.completed });
+    const scheduledEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.NotStarted, page: pageByTab.scheduled });
+
+    const queriesByKey: Record<TabKey, { data?: any; isLoading: boolean }> = {
+        all: { data: allEnrollments.data, isLoading: allEnrollments.isLoading },
+        current: { data: currentEnrollments.data, isLoading: currentEnrollments.isLoading },
+        completed: { data: completedEnrollments.data, isLoading: completedEnrollments.isLoading },
+        scheduled: { data: scheduledEnrollments.data, isLoading: scheduledEnrollments.isLoading },
+    };
+
+    // If no session selected, prompt user
+    if (allEnrollments.isLoading) {
+        return <p className="text-center text-gray-500 py-4">Sélectionnez une session pour voir les participants</p>;
+    }
 
     return (
-        <Tabs defaultValue={activeTabDefault} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
                 {TABS.map(t => (
                     <TabsTrigger key={t.key} value={t.key}>
@@ -38,13 +57,7 @@ const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId, sessionId 
             </TabsList>
 
             {TABS.map(tab => {
-                const page = pageByTab[tab.key];
-                const { data, isLoading } = useSessionEnrollments({
-                    trainingId,
-                    sessionId,
-                    status: tab.status,
-                    page,
-                });
+                const { data, isLoading } = queriesByKey[tab.key];
                 return (
                     <TabsContent key={tab.key} value={tab.key}>
                         <Card>
@@ -54,7 +67,7 @@ const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId, sessionId 
                             <CardContent>
                                 <EnrollmentsTable
                                     items={data?.content ?? []}
-                                    page={page}
+                                    page={pageByTab[tab.key]}
                                     totalPages={data?.totalPages ?? 1}
                                     loading={isLoading}
                                     showSessionStatus={tab.showSessionStatus}

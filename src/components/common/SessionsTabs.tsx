@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Plus, Trash2 } from 'lucide-react';
+import { Edit, Plus, Trash2, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { SessionDetail } from '@/types/SessionDetail';
@@ -14,8 +14,18 @@ import { SessionStatus } from '@/types/SessionStatus';
 import {
     useSessions,
     useDeleteSession,
+    useUpdateSession,
 } from '@/hooks/useSessions';
 import SessionDialog from './SessionDialog';
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '../ui/dialog';
 
 interface SessionsTabsProps {
     trainingId?: string;
@@ -38,12 +48,16 @@ export default function SessionsTabs({ trainingId }: SessionsTabsProps) {
     const [editingSession, setEditingSession] = useState<SessionDetail | null>(null);
     const [createSession, setCreateSession] = useState<SessionDetail | null>(null);
 
+    // Confirmation dialog state
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [sessionToRun, setSessionToRun] = useState<SessionDetail | null>(null);
 
     // DATA
     const { data: response, isLoading, isError, error } =
         useSessions({ trainingId: tid, page, size: pageSize });
     const { mutate: deleteSession, isLoading: isDeleting } =
         useDeleteSession({ trainingId: tid, page, size: pageSize });
+    const updateSession = useUpdateSession({});
 
     const busy = isDeleting;
     const sessions = response?.content ?? [];
@@ -61,25 +75,64 @@ export default function SessionsTabs({ trainingId }: SessionsTabsProps) {
     );
 
     const getStatusBadge = (status: SessionDetail['status']) => {
-        console.log(status + ": " + statusMap[status])
         const cfg = statusMap[status];
         return <Badge className={cfg.style}>{cfg.label}</Badge>;
     };
 
+    // Open the session dialog for create/edit
     const openDialog = (session?: SessionDetail) => {
         setEditingSession(session ?? null);
         setIsDialogOpen(true);
     };
 
+    // Delete handler
     const handleDelete = (id: number) => {
         deleteSession(id, {
-            onSuccess: async () => toast({ title: 'Session supprimée', description: "", variant: 'default' }),
+            onSuccess: async () => toast({ title: 'Session supprimée' }),
             onError: async () => toast({ title: 'Erreur', description: 'Impossible de supprimer.', variant: 'destructive' }),
         });
     };
 
+    // Actual mutation call
+    const executeRunSession = (session: SessionDetail) => {
+        updateSession.mutate(
+            {
+                id: session.id,
+                data: {
+                    status: SessionStatus.Active,
+                    startDate: session.startDate,
+                    endDate: session.endDate,
+                    location: session.location,
+                },
+            },
+            { onSuccess }
+        );
+    };
+
+    // Trigger to open confirm dialog
+    const handlePlayClick = (session: SessionDetail) => {
+        setSessionToRun(session);
+        setConfirmOpen(true);
+    };
+
+    const onSuccess = () => {
+        toast({ title: 'Session lancée' });
+    };
+
     if (isLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>;
     if (isError) return <div className="p-4 text-center text-red-500">Erreur : {error?.message}</div>;
+
+    // Compute warning for selected session
+    const selectedDate = sessionToRun ? new Date(sessionToRun.startDate) : new Date();
+    const today = new Date();
+    const isToday =
+        sessionToRun &&
+        selectedDate.getFullYear() === today.getFullYear() &&
+        selectedDate.getMonth() === today.getMonth() &&
+        selectedDate.getDate() === today.getDate();
+    const warningMessage = sessionToRun && !isToday
+        ? `⚠️ La date de la session (${selectedDate.toLocaleDateString()}) n'est pas aujourd'hui.`
+        : null;
 
     const renderTable = (list: SessionDetail[]) => (
         <Table>
@@ -110,6 +163,14 @@ export default function SessionsTabs({ trainingId }: SessionsTabsProps) {
                                 <Button
                                     variant="ghost"
                                     size="sm"
+                                    onClick={e => { e.stopPropagation(); handlePlayClick(session); }}
+                                    disabled={busy}
+                                >
+                                    <Play className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={e => { e.stopPropagation(); openDialog(session); }}
                                     disabled={busy}
                                 >
@@ -137,10 +198,34 @@ export default function SessionsTabs({ trainingId }: SessionsTabsProps) {
                 open={isDialogOpen}
                 session={editingSession}
                 defaultTrainingId={tid}
-                onClose={() => {
-                    setIsDialogOpen(false)
-                }}
+                onClose={() => setIsDialogOpen(false)}
             />
+
+            {/* Confirmation Dialog */}
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirmer le démarrage</DialogTitle>
+                        <DialogDescription>
+                            {warningMessage ?? 'Êtes-vous sûr·e de vouloir démarrer cette session ?'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="space-x-2">
+                        <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                if (sessionToRun) executeRunSession(sessionToRun);
+                                setConfirmOpen(false);
+                            }}
+                        >
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Button onClick={() => { setCreateSession(null); setIsDialogOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" />Nouvelle Session

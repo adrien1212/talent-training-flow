@@ -43,8 +43,10 @@ const SessionsToday: React.FC<SessionTodayProps> = ({ trainingId }) => {
             ACTIVE: { variant: "default", label: "En cours", color: "bg-green-100 text-green-800" },
             COMPLETED: { variant: "secondary", label: "Terminée", color: "bg-gray-100 text-gray-800" },
             CANCELLED: { variant: "destructive", label: "Annulée", color: "bg-red-100 text-red-800" },
+            NOT_STARTED: { variant: "secondary", label: 'Programmée', style: 'bg-blue-100 text-blue-800' },
         };
 
+        console.log(status)
         const config = variants[status];
         return (
             <Badge className={config.color}>
