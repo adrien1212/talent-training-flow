@@ -13,10 +13,16 @@ import Trainings from "./pages/Trainings";
 import TrainingDetail from "./pages/TrainingDetail";
 import Sessions from "./pages/Sessions";
 import SessionDetail from "./pages/SessionDetail";
-import AddEmployeeToSession from "./pages/AddEmployeeToSession";
 import Feedback from "./pages/Feedback";
 import Statistics from "./pages/Statistics";
 import GiveFeedback from "./pages/GiveFeedback";
+import SessionSignature from "./pages/SessionSignature";
+import TrainerSpace from "./pages/TrainerSpace";
+import StudentSpace from "./pages/StudentSpace";
+import SkillsManagement from "./pages/SkillsManagement";
+import BudgetManagement from "./pages/BudgetManagement";
+import NotificationsManagement from "./pages/NotificationsManagement";
+import TrainersManagement from "./pages/TrainersManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,13 +43,16 @@ const App = () => (
           <Route path="/trainings/:id" element={<TrainingDetail />} />
           <Route path="/sessions" element={<Sessions />} />
           <Route path="/sessions/:id" element={<SessionDetail />} />
-          <Route path="/add-employee-session" element={<AddEmployeeToSession />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/give-feedback" element={<GiveFeedback />} />
           <Route path="/signature/:accessToken" element={<SessionSignature />} />
           <Route path="/espace-formateur/:trainingAccessToken" element={<TrainerSpace />} />
           <Route path="/espace-etudiants" element={<StudentSpace />} />
+          <Route path="/skills-management" element={<SkillsManagement />} />
+          <Route path="/budget-management" element={<BudgetManagement />} />
+          <Route path="/notifications-management" element={<NotificationsManagement />} />
+          <Route path="/trainers-management" element={<TrainersManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
