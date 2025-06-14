@@ -1,397 +1,279 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerWithRange } from "@/components/ui/date-picker";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { 
-  FileSpreadsheet, 
-  FileText, 
-  Download, 
-  Filter,
-  Calendar,
-  Users,
-  GraduationCap,
-  Building2,
-  BarChart3,
-  Clock
-} from "lucide-react";
-import { toast } from "sonner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, Download, Filter, FileSpreadsheet, FileText } from "lucide-react";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { format } from 'date-fns';
 
-const Reports = () => {
-  const [reportType, setReportType] = useState("");
-  const [dateRange, setDateRange] = useState(null);
-  const [selectedDepartments, setSelectedDepartments] = useState([]);
-  const [selectedFormations, setSelectedFormations] = useState([]);
-  const [includeStats, setIncludeStats] = useState(true);
-  const [includeAttendance, setIncludeAttendance] = useState(true);
+export default function Reports() {
+  const navigate = useNavigate();
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+    to: new Date(),
+  });
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [includeStatistics, setIncludeStatistics] = useState(true);
   const [includeFeedback, setIncludeFeedback] = useState(false);
-  const [exportFormat, setExportFormat] = useState("excel");
+  const [includeCharts, setIncludeCharts] = useState(false);
 
-  const reportTypes = [
-    { value: "formations", label: "Rapport des formations", icon: GraduationCap },
-    { value: "employees", label: "Rapport des employés", icon: Users },
-    { value: "departments", label: "Rapport par département", icon: Building2 },
-    { value: "attendance", label: "Rapport de présence", icon: Clock },
-    { value: "statistics", label: "Rapport statistique global", icon: BarChart3 },
-    { value: "budget", label: "Rapport budgétaire", icon: FileText },
+  // Mock data
+  const departments = ["Production", "RH", "Marketing", "Comptabilité"];
+  const trainingTypes = ["Sécurité", "Informatique", "Management"];
+  const statuses = ["Planifiée", "Terminée", "Annulée"];
+  const mockReportData = [
+    { training: "Sécurité au travail", department: "Production", participants: 25, date: "2024-05-15", status: "Terminée", rating: 4.5 },
+    { training: "Excel avancé", department: "Comptabilité", participants: 15, date: "2024-05-20", status: "Terminée", rating: 4.8 },
+    { training: "Gestion de projet", department: "Marketing", participants: 20, date: "2024-05-25", status: "Planifiée", rating: 0 },
+    { training: "Soudure niveau 1", department: "Production", participants: 10, date: "2024-05-30", status: "Terminée", rating: 4.2 },
+    { training: "Communication interpersonnelle", department: "RH", participants: 12, date: "2024-06-05", status: "Planifiée", rating: 0 },
+    { training: "Sécurité incendie", department: "Production", participants: 25, date: "2024-05-15", status: "Terminée", rating: 4.5 },
+    { training: "Word pour débutants", department: "Comptabilité", participants: 15, date: "2024-05-20", status: "Terminée", rating: 4.8 },
+    { training: "Marketing digital", department: "Marketing", participants: 20, date: "2024-05-25", status: "Planifiée", rating: 0 },
+    { training: "Lecture de plans", department: "Production", participants: 10, date: "2024-05-30", status: "Terminée", rating: 4.2 },
+    { training: "Gestion des conflits", department: "RH", participants: 12, date: "2024-06-05", status: "Planifiée", rating: 0 }
   ];
 
-  const departments = [
-    "Ressources Humaines",
-    "Informatique", 
-    "Marketing",
-    "Finance",
-    "Production",
-    "Commercial"
-  ];
-
-  const formations = [
-    "Sécurité au travail",
-    "Développement web",
-    "Gestion de projet",
-    "Communication",
-    "Leadership",
-    "Excel avancé"
-  ];
-
-  const handleDepartmentChange = (dept, checked) => {
-    if (checked) {
-      setSelectedDepartments([...selectedDepartments, dept]);
-    } else {
-      setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
-    }
+  const handleExportClick = (format: 'excel' | 'pdf') => {
+    const filename = `rapport_${formatDate(dateRange.from)}_${formatDate(dateRange.to)}.${format}`;
+    alert(`Export du rapport au format ${format.toUpperCase()} - Nom du fichier: ${filename}`);
   };
 
-  const handleFormationChange = (formation, checked) => {
-    if (checked) {
-      setSelectedFormations([...selectedFormations, formation]);
-    } else {
-      setSelectedFormations(selectedFormations.filter(f => f !== formation));
-    }
+  const handleCheckboxChange = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    return (checked: boolean | "indeterminate") => {
+      if (typeof checked === 'boolean') {
+        setter(checked);
+      }
+    };
   };
 
-  const handleExport = (format) => {
-    if (!reportType) {
-      toast.error("Veuillez sélectionner un type de rapport");
-      return;
-    }
-
-    const formatLabel = format === "excel" ? "Excel" : "PDF";
-    const reportLabel = reportTypes.find(r => r.value === reportType)?.label || "Rapport";
-    
-    toast.success(`Export ${formatLabel} en cours...`, {
-      description: `Génération du ${reportLabel} au format ${formatLabel}`
-    });
-
-    // Simulation de l'export
-    setTimeout(() => {
-      toast.success(`${reportLabel} exporté avec succès!`, {
-        description: `Le fichier ${formatLabel} a été téléchargé`
-      });
-    }, 2000);
+  const formatDate = (date: Date | undefined) => {
+    return date ? format(date, 'dd-MM-yyyy') : 'N/A';
   };
-
-  const clearFilters = () => {
-    setReportType("");
-    setDateRange(null);
-    setSelectedDepartments([]);
-    setSelectedFormations([]);
-    setIncludeStats(true);
-    setIncludeAttendance(true);
-    setIncludeFeedback(false);
-    setExportFormat("excel");
-    toast.info("Filtres réinitialisés");
-  };
-
-  const selectedReportType = reportTypes.find(r => r.value === reportType);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Rapports & Exports</h1>
-          <p className="text-gray-600 mt-2">
-            Générez des rapports personnalisés et exportez-les au format Excel ou PDF
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={clearFilters}>
-            <Filter className="h-4 w-4 mr-2" />
-            Réinitialiser
-          </Button>
-        </div>
-      </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <main className="flex-1">
+          <header className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Rapports & Exports</h1>
+                <p className="text-gray-600">Génération de rapports personnalisés</p>
+              </div>
+            </div>
+          </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Configuration des filtres */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Configuration du rapport
-              </CardTitle>
-              <CardDescription>
-                Sélectionnez les critères pour générer votre rapport personnalisé
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Type de rapport */}
-              <div className="space-y-2">
-                <Label htmlFor="report-type">Type de rapport *</Label>
-                <Select value={reportType} onValueChange={setReportType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez un type de rapport" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {reportTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center gap-2">
-                          <type.icon className="h-4 w-4" />
-                          {type.label}
+          <div className="p-6 space-y-6">
+            {/* Filtres et configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filtres et configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Période */}
+                <div>
+                  <Label className="text-base font-medium">Période</Label>
+                  <DatePickerWithRange
+                    date={dateRange}
+                    onDateChange={setDateRange}
+                    className="mt-2"
+                  />
+                </div>
+
+                {/* Filtres par type */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Départements */}
+                  <div>
+                    <Label className="text-base font-medium">Départements</Label>
+                    <div className="mt-2 space-y-2">
+                      {departments.map((dept) => (
+                        <div key={dept} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`dept-${dept}`}
+                            checked={selectedDepartments.includes(dept)}
+                            onCheckedChange={handleCheckboxChange((checked) => {
+                              if (checked) {
+                                setSelectedDepartments([...selectedDepartments, dept]);
+                              } else {
+                                setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
+                              }
+                            })}
+                          />
+                          <Label htmlFor={`dept-${dept}`} className="text-sm">{dept}</Label>
                         </div>
-                      </SelectItem>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Types de formation */}
+                  <div>
+                    <Label className="text-base font-medium">Types de formation</Label>
+                    <div className="mt-2 space-y-2">
+                      {trainingTypes.map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`type-${type}`}
+                            checked={selectedTrainingTypes.includes(type)}
+                            onCheckedChange={handleCheckboxChange((checked) => {
+                              if (checked) {
+                                setSelectedTrainingTypes([...selectedTrainingTypes, type]);
+                              } else {
+                                setSelectedTrainingTypes(selectedTrainingTypes.filter(t => t !== type));
+                              }
+                            })}
+                          />
+                          <Label htmlFor={`type-${type}`} className="text-sm">{type}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Statuts */}
+                  <div>
+                    <Label className="text-base font-medium">Statuts</Label>
+                    <div className="mt-2 space-y-2">
+                      {statuses.map((status) => (
+                        <div key={status} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`status-${status}`}
+                            checked={selectedStatuses.includes(status)}
+                            onCheckedChange={handleCheckboxChange((checked) => {
+                              if (checked) {
+                                setSelectedStatuses([...selectedStatuses, status]);
+                              } else {
+                                setSelectedStatuses(selectedStatuses.filter(s => s !== status));
+                              }
+                            })}
+                          />
+                          <Label htmlFor={`status-${status}`} className="text-sm">{status}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Options d'export */}
+                <div>
+                  <Label className="text-base font-medium">Options d'export</Label>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-stats"
+                        checked={includeStatistics}
+                        onCheckedChange={handleCheckboxChange(setIncludeStatistics)}
+                      />
+                      <Label htmlFor="include-stats" className="text-sm">Inclure les statistiques</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-feedback"
+                        checked={includeFeedback}
+                        onCheckedChange={handleCheckboxChange(setIncludeFeedback)}
+                      />
+                      <Label htmlFor="include-feedback" className="text-sm">Inclure les évaluations</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-charts"
+                        checked={includeCharts}
+                        onCheckedChange={handleCheckboxChange(setIncludeCharts)}
+                      />
+                      <Label htmlFor="include-charts" className="text-sm">Inclure les graphiques</Label>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions d'export */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Générer le rapport
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <Button
+                    onClick={() => handleExportClick('excel')}
+                    className="flex items-center gap-2"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Exporter en Excel
+                  </Button>
+                  <Button
+                    onClick={() => handleExportClick('pdf')}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Exporter en PDF
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Aperçu des données */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Aperçu des données</CardTitle>
+                <CardDescription>
+                  Prévisualisation du rapport selon les filtres sélectionnés
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Formation</TableHead>
+                      <TableHead>Département</TableHead>
+                      <TableHead>Participants</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Note moyenne</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mockReportData.slice(0, 5).map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{item.training}</TableCell>
+                        <TableCell>{item.department}</TableCell>
+                        <TableCell>{item.participants}</TableCell>
+                        <TableCell>{item.date}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === 'Terminée' ? 'default' : 'secondary'}>
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{item.rating}/5</TableCell>
+                      </TableRow>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Période */}
-              <div className="space-y-2">
-                <Label>Période</Label>
-                <DatePickerWithRange
-                  date={dateRange}
-                  onDateChange={setDateRange}
-                  placeholder="Sélectionnez une période"
-                />
-              </div>
-
-              {/* Départements */}
-              <div className="space-y-3">
-                <Label>Départements</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {departments.map((dept) => (
-                    <div key={dept} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={dept}
-                        checked={selectedDepartments.includes(dept)}
-                        onCheckedChange={(checked) => handleDepartmentChange(dept, checked)}
-                      />
-                      <Label htmlFor={dept} className="text-sm font-normal cursor-pointer">
-                        {dept}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Formations */}
-              <div className="space-y-3">
-                <Label>Formations spécifiques</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {formations.map((formation) => (
-                    <div key={formation} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={formation}
-                        checked={selectedFormations.includes(formation)}
-                        onCheckedChange={(checked) => handleFormationChange(formation, checked)}
-                      />
-                      <Label htmlFor={formation} className="text-sm font-normal cursor-pointer">
-                        {formation}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Options d'inclusion */}
-              <div className="space-y-3">
-                <Label>Données à inclure</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="stats"
-                      checked={includeStats}
-                      onCheckedChange={setIncludeStats}
-                    />
-                    <Label htmlFor="stats" className="text-sm font-normal cursor-pointer">
-                      Statistiques et métriques
-                    </Label>
+                  </TableBody>
+                </Table>
+                {mockReportData.length > 5 && (
+                  <div className="mt-4 text-center text-sm text-gray-500">
+                    ... et {mockReportData.length - 5} autres lignes
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="attendance"
-                      checked={includeAttendance}
-                      onCheckedChange={setIncludeAttendance}
-                    />
-                    <Label htmlFor="attendance" className="text-sm font-normal cursor-pointer">
-                      Données de présence
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="feedback"
-                      checked={includeFeedback}
-                      onCheckedChange={setIncludeFeedback}
-                    />
-                    <Label htmlFor="feedback" className="text-sm font-normal cursor-pointer">
-                      Commentaires et évaluations
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Aperçu et export */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Aperçu du rapport
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedReportType ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <selectedReportType.icon className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">{selectedReportType.label}</span>
-                  </div>
-                  
-                  {dateRange && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>Période sélectionnée</span>
-                    </div>
-                  )}
-
-                  {selectedDepartments.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-1">Départements :</p>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedDepartments.map((dept) => (
-                          <Badge key={dept} variant="secondary" className="text-xs">
-                            {dept}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedFormations.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-1">Formations :</p>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedFormations.map((formation) => (
-                          <Badge key={formation} variant="outline" className="text-xs">
-                            {formation}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-gray-600">
-                    <p>Données incluses :</p>
-                    <ul className="list-disc list-inside text-xs space-y-1 mt-1">
-                      {includeStats && <li>Statistiques et métriques</li>}
-                      {includeAttendance && <li>Données de présence</li>}
-                      {includeFeedback && <li>Commentaires et évaluations</li>}
-                    </ul>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">
-                  Sélectionnez un type de rapport pour voir l'aperçu
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5" />
-                Export
-              </CardTitle>
-              <CardDescription>
-                Choisissez le format d'export et téléchargez votre rapport
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Format d'export</Label>
-                <Select value={exportFormat} onValueChange={setExportFormat}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="excel">
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                        Excel (.xlsx)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="pdf">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-red-600" />
-                        PDF (.pdf)
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => handleExport(exportFormat)}
-                  disabled={!reportType}
-                  className="w-full"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Exporter en {exportFormat === "excel" ? "Excel" : "PDF"}
-                </Button>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleExport("excel")}
-                    disabled={!reportType}
-                    className="flex-1"
-                  >
-                    <FileSpreadsheet className="h-4 w-4 mr-1" />
-                    Excel
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleExport("pdf")}
-                    disabled={!reportType}
-                    className="flex-1"
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    PDF
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
-};
-
-export default Reports;
+}

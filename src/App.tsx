@@ -16,6 +16,7 @@ import Feedback from "./pages/Feedback";
 import Statistics from "./pages/Statistics";
 import GiveFeedback from "./pages/GiveFeedback";
 import SessionSignature from "./pages/SessionSignature";
+import SessionSignatureMatrix from "./pages/SessionSignatureMatrix";
 import TrainerSpace from "./pages/TrainerSpace";
 import StudentSpace from "./pages/StudentSpace";
 import SkillsManagement from "./pages/SkillsManagement";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/trainings/:id" element={<TrainingDetail />} />
           <Route path="/sessions" element={<Sessions />} />
           <Route path="/sessions/:id" element={<SessionDetail />} />
+          <Route path="/sessions/:id/signatures" element={<SessionSignatureMatrix />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/give-feedback" element={<GiveFeedback />} />
