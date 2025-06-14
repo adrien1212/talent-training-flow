@@ -5,108 +5,90 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Mail, MessageSquare, Clock, Users, Plus, Send } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Bell, Mail, MessageSquare, Plus, Send, Clock, CheckCircle } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 
-interface NotificationRule {
+interface NotificationTemplate {
   id: number;
   name: string;
-  type: "email" | "sms" | "both";
-  trigger: "session_reminder" | "candidature_pending" | "session_completion";
-  delay: number;
-  delayUnit: "hours" | "days";
-  isActive: boolean;
-  template: string;
+  type: "email" | "sms";
+  subject: string;
+  content: string;
+  triggerType: "session_reminder" | "application_reminder" | "completion_request" | "feedback_request";
+  active: boolean;
 }
 
 interface NotificationHistory {
   id: number;
-  type: "email" | "sms";
+  type: string;
   recipient: string;
   subject: string;
   sentAt: string;
   status: "sent" | "failed" | "pending";
-  ruleId: number;
 }
 
 const NotificationsManagement = () => {
   const { toast } = useToast();
-  const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([
+  
+  const [templates, setTemplates] = useState<NotificationTemplate[]>([
     {
       id: 1,
-      name: "Rappel session J-1",
+      name: "Rappel session J-3",
       type: "email",
-      trigger: "session_reminder",
-      delay: 24,
-      delayUnit: "hours",
-      isActive: true,
-      template: "Rappel : Votre formation {{trainingName}} a lieu demain à {{time}}."
+      subject: "Rappel : Formation {trainingName} dans 3 jours",
+      content: "Bonjour {employeeName},\n\nNous vous rappelons que vous êtes inscrit(e) à la formation \"{trainingName}\" qui aura lieu le {date} à {time} en salle {location}.\n\nMerci de confirmer votre présence.",
+      triggerType: "session_reminder",
+      active: true,
     },
     {
       id: 2,
-      name: "Rappel candidature en attente",
-      type: "both",
-      trigger: "candidature_pending",
-      delay: 3,
-      delayUnit: "days",
-      isActive: true,
-      template: "Votre candidature pour {{trainingName}} est en attente. Confirmez votre participation."
+      name: "Relance candidature",
+      type: "email",
+      subject: "Relance : Inscription formation {trainingName}",
+      content: "Bonjour {employeeName},\n\nVotre candidature pour la formation \"{trainingName}\" est en attente de validation. La date limite d'inscription est le {deadline}.\n\nMerci de confirmer votre participation.",
+      triggerType: "application_reminder",
+      active: true,
     },
   ]);
 
-  const [notificationHistory, setNotificationHistory] = useState<NotificationHistory[]>([
+  const [history, setHistory] = useState<NotificationHistory[]>([
     {
       id: 1,
-      type: "email",
+      type: "Email",
       recipient: "jean.martin@company.com",
-      subject: "Rappel formation sécurité",
-      sentAt: "2024-06-10 14:30",
+      subject: "Rappel : Formation Sécurité dans 3 jours",
+      sentAt: "2024-01-15 09:30",
       status: "sent",
-      ruleId: 1
     },
     {
       id: 2,
-      type: "sms",
-      recipient: "+33123456789",
-      subject: "Candidature en attente",
-      sentAt: "2024-06-09 10:15",
+      type: "SMS",
+      recipient: "+33612345678",
+      subject: "Rappel formation demain 14h",
+      sentAt: "2024-01-14 18:00",
       status: "sent",
-      ruleId: 2
     },
   ]);
 
-  const [isAddRuleDialogOpen, setIsAddRuleDialogOpen] = useState(false);
-  const [newRule, setNewRule] = useState({
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({
     name: "",
-    type: "email" as const,
-    trigger: "session_reminder" as const,
-    delay: 24,
-    delayUnit: "hours" as const,
-    template: ""
+    type: "email" as "email" | "sms",
+    subject: "",
+    content: "",
+    triggerType: "session_reminder" as NotificationTemplate['triggerType'],
   });
 
-  const triggerOptions = [
-    { value: "session_reminder", label: "Rappel de session" },
-    { value: "candidature_pending", label: "Candidature en attente" },
-    { value: "session_completion", label: "Session terminée" }
-  ];
-
-  const typeOptions = [
-    { value: "email", label: "Email uniquement" },
-    { value: "sms", label: "SMS uniquement" },
-    { value: "both", label: "Email + SMS" }
-  ];
-
-  const addRule = () => {
-    if (!newRule.name || !newRule.template) {
+  const addTemplate = () => {
+    if (!newTemplate.name || !newTemplate.content) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires.",
@@ -115,50 +97,69 @@ const NotificationsManagement = () => {
       return;
     }
 
-    const rule: NotificationRule = {
-      id: notificationRules.length + 1,
-      ...newRule,
-      isActive: true,
+    const template: NotificationTemplate = {
+      id: templates.length + 1,
+      ...newTemplate,
+      active: true,
     };
 
-    setNotificationRules([...notificationRules, rule]);
-    setNewRule({
+    setTemplates([...templates, template]);
+    setNewTemplate({
       name: "",
       type: "email",
-      trigger: "session_reminder",
-      delay: 24,
-      delayUnit: "hours",
-      template: ""
+      subject: "",
+      content: "",
+      triggerType: "session_reminder",
     });
-    setIsAddRuleDialogOpen(false);
+    setIsTemplateDialogOpen(false);
 
     toast({
       title: "Succès",
-      description: "Règle de notification ajoutée avec succès.",
+      description: "Modèle de notification créé avec succès.",
     });
   };
 
-  const toggleRule = (ruleId: number) => {
-    setNotificationRules(notificationRules.map(rule =>
-      rule.id === ruleId ? { ...rule, isActive: !rule.isActive } : rule
+  const toggleTemplate = (id: number) => {
+    setTemplates(templates.map(template => 
+      template.id === id ? { ...template, active: !template.active } : template
     ));
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "sent": return "secondary";
-      case "failed": return "destructive";
-      case "pending": return "default";
-      default: return "default";
+  const sendTestNotification = (templateId: number) => {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      toast({
+        title: "Test envoyé",
+        description: `Notification test envoyée avec le modèle "${template.name}".`,
+      });
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getStatusBadge = (status: NotificationHistory['status']) => {
+    switch (status) {
+      case 'sent':
+        return <Badge className="bg-green-100 text-green-800">Envoyé</Badge>;
+      case 'failed':
+        return <Badge className="bg-red-100 text-red-800">Échec</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">En attente</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getTriggerTypeBadge = (type: NotificationTemplate['triggerType']) => {
     switch (type) {
-      case "email": return <Mail className="h-4 w-4" />;
-      case "sms": return <MessageSquare className="h-4 w-4" />;
-      case "both": return <Bell className="h-4 w-4" />;
-      default: return <Bell className="h-4 w-4" />;
+      case 'session_reminder':
+        return <Badge variant="outline">Rappel session</Badge>;
+      case 'application_reminder':
+        return <Badge variant="outline">Relance candidature</Badge>;
+      case 'completion_request':
+        return <Badge variant="outline">Demande d'évaluation</Badge>;
+      case 'feedback_request':
+        return <Badge variant="outline">Demande d'avis</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
     }
   };
 
@@ -172,120 +173,104 @@ const NotificationsManagement = () => {
               <SidebarTrigger />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Notifications & Rappels</h1>
-                <p className="text-gray-600">Gestion automatisée des alertes et relances</p>
+                <p className="text-gray-600">Gestion des alertes et communications automatiques</p>
               </div>
             </div>
           </header>
 
           <div className="p-6">
-            <Tabs defaultValue="rules" className="space-y-6">
+            <Tabs defaultValue="templates" className="space-y-6">
               <TabsList>
-                <TabsTrigger value="rules">Règles de notification</TabsTrigger>
-                <TabsTrigger value="history">Historique</TabsTrigger>
                 <TabsTrigger value="templates">Modèles</TabsTrigger>
+                <TabsTrigger value="history">Historique</TabsTrigger>
                 <TabsTrigger value="settings">Paramètres</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="rules" className="space-y-6">
+              <TabsContent value="templates" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="flex items-center gap-2">
                           <Bell className="h-5 w-5" />
-                          Règles de notification
+                          Modèles de notifications
                         </CardTitle>
-                        <CardDescription>Configuration des alertes automatiques</CardDescription>
+                        <CardDescription>Créer et gérer les modèles d'e-mails et SMS automatiques</CardDescription>
                       </div>
-                      <Dialog open={isAddRuleDialogOpen} onOpenChange={setIsAddRuleDialogOpen}>
+                      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
                         <DialogTrigger asChild>
                           <Button>
                             <Plus className="h-4 w-4 mr-2" />
-                            Ajouter une règle
+                            Nouveau modèle
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle>Nouvelle règle de notification</DialogTitle>
-                            <DialogDescription>Configurez une nouvelle règle d'alerte automatique</DialogDescription>
+                            <DialogTitle>Nouveau modèle de notification</DialogTitle>
+                            <DialogDescription>Créez un nouveau modèle pour les notifications automatiques</DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="ruleName">Nom de la règle *</Label>
-                              <Input
-                                id="ruleName"
-                                value={newRule.name}
-                                onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                                placeholder="Ex: Rappel session J-1"
-                              />
-                            </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <Label htmlFor="trigger">Déclencheur</Label>
-                                <Select value={newRule.trigger} onValueChange={(value: any) => setNewRule({ ...newRule, trigger: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {triggerOptions.map((option) => (
-                                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label htmlFor="type">Type de notification</Label>
-                                <Select value={newRule.type} onValueChange={(value: any) => setNewRule({ ...newRule, type: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {typeOptions.map((option) => (
-                                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="delay">Délai</Label>
+                                <Label htmlFor="templateName">Nom du modèle *</Label>
                                 <Input
-                                  id="delay"
-                                  type="number"
-                                  value={newRule.delay}
-                                  onChange={(e) => setNewRule({ ...newRule, delay: parseInt(e.target.value) || 0 })}
+                                  id="templateName"
+                                  value={newTemplate.name}
+                                  onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                                  placeholder="Ex: Rappel session J-3"
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="delayUnit">Unité</Label>
-                                <Select value={newRule.delayUnit} onValueChange={(value: any) => setNewRule({ ...newRule, delayUnit: value })}>
+                                <Label htmlFor="templateType">Type *</Label>
+                                <Select value={newTemplate.type} onValueChange={(value: "email" | "sms") => setNewTemplate({ ...newTemplate, type: value })}>
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="hours">Heures</SelectItem>
-                                    <SelectItem value="days">Jours</SelectItem>
+                                    <SelectItem value="email">E-mail</SelectItem>
+                                    <SelectItem value="sms">SMS</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
                             </div>
                             <div>
-                              <Label htmlFor="template">Modèle de message *</Label>
+                              <Label htmlFor="triggerType">Déclencheur *</Label>
+                              <Select value={newTemplate.triggerType} onValueChange={(value: NotificationTemplate['triggerType']) => setNewTemplate({ ...newTemplate, triggerType: value })}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="session_reminder">Rappel de session</SelectItem>
+                                  <SelectItem value="application_reminder">Relance candidature</SelectItem>
+                                  <SelectItem value="completion_request">Demande d'évaluation</SelectItem>
+                                  <SelectItem value="feedback_request">Demande d'avis</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {newTemplate.type === "email" && (
+                              <div>
+                                <Label htmlFor="templateSubject">Objet *</Label>
+                                <Input
+                                  id="templateSubject"
+                                  value={newTemplate.subject}
+                                  onChange={(e) => setNewTemplate({ ...newTemplate, subject: e.target.value })}
+                                  placeholder="Ex: Rappel : Formation dans 3 jours"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <Label htmlFor="templateContent">Contenu *</Label>
                               <Textarea
-                                id="template"
-                                value={newRule.template}
-                                onChange={(e) => setNewRule({ ...newRule, template: e.target.value })}
-                                placeholder="Message avec variables : {{trainingName}}, {{time}}, {{location}}"
-                                rows={3}
+                                id="templateContent"
+                                value={newTemplate.content}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                                placeholder="Variables disponibles: {employeeName}, {trainingName}, {date}, {time}, {location}"
+                                rows={6}
                               />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Variables disponibles : {{trainingName}}, {{time}}, {{location}}, {{employeeName}}
-                              </p>
                             </div>
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setIsAddRuleDialogOpen(false)}>Annuler</Button>
-                              <Button onClick={addRule}>Ajouter</Button>
+                              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>Annuler</Button>
+                              <Button onClick={addTemplate}>Créer</Button>
                             </div>
                           </div>
                         </DialogContent>
@@ -299,37 +284,41 @@ const NotificationsManagement = () => {
                           <TableHead>Nom</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Déclencheur</TableHead>
-                          <TableHead>Délai</TableHead>
                           <TableHead>Statut</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {notificationRules.map((rule) => (
-                          <TableRow key={rule.id}>
-                            <TableCell className="font-medium">{rule.name}</TableCell>
+                        {templates.map((template) => (
+                          <TableRow key={template.id}>
+                            <TableCell className="font-medium">{template.name}</TableCell>
+                            <TableCell>
+                              <Badge variant={template.type === "email" ? "default" : "secondary"}>
+                                {template.type === "email" ? <Mail className="h-3 w-3 mr-1" /> : <MessageSquare className="h-3 w-3 mr-1" />}
+                                {template.type === "email" ? "E-mail" : "SMS"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{getTriggerTypeBadge(template.triggerType)}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {getTypeIcon(rule.type)}
-                                <span className="capitalize">{rule.type}</span>
+                                <Switch
+                                  checked={template.active}
+                                  onCheckedChange={() => toggleTemplate(template.id)}
+                                />
+                                <span className="text-sm">{template.active ? "Actif" : "Inactif"}</span>
                               </div>
                             </TableCell>
                             <TableCell>
-                              {triggerOptions.find(t => t.value === rule.trigger)?.label}
-                            </TableCell>
-                            <TableCell>
-                              {rule.delay} {rule.delayUnit === "hours" ? "heures" : "jours"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={rule.isActive ? "secondary" : "outline"}>
-                                {rule.isActive ? "Actif" : "Inactif"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Switch
-                                checked={rule.isActive}
-                                onCheckedChange={() => toggleRule(rule.id)}
-                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => sendTestNotification(template.id)}
+                                >
+                                  <Send className="h-3 w-3 mr-1" />
+                                  Test
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -346,90 +335,50 @@ const NotificationsManagement = () => {
                       <Clock className="h-5 w-5" />
                       Historique des notifications
                     </CardTitle>
-                    <CardDescription>Suivi des alertes envoyées</CardDescription>
+                    <CardDescription>Suivi de toutes les notifications envoyées</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="flex gap-4 mb-6">
+                      <Input placeholder="Rechercher par destinataire..." className="max-w-sm" />
+                      <Select defaultValue="all">
+                        <SelectTrigger className="w-48">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les types</SelectItem>
+                          <SelectItem value="email">E-mail</SelectItem>
+                          <SelectItem value="sms">SMS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Type</TableHead>
                           <TableHead>Destinataire</TableHead>
-                          <TableHead>Sujet</TableHead>
-                          <TableHead>Date d'envoi</TableHead>
+                          <TableHead>Objet/Contenu</TableHead>
+                          <TableHead>Envoyé le</TableHead>
                           <TableHead>Statut</TableHead>
-                          <TableHead>Règle</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {notificationHistory.map((notification) => {
-                          const rule = notificationRules.find(r => r.id === notification.ruleId);
-                          return (
-                            <TableRow key={notification.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {notification.type === "email" ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-                                  <span className="capitalize">{notification.type}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>{notification.recipient}</TableCell>
-                              <TableCell>{notification.subject}</TableCell>
-                              <TableCell>{notification.sentAt}</TableCell>
-                              <TableCell>
-                                <Badge variant={getStatusColor(notification.status)}>
-                                  {notification.status === "sent" ? "Envoyé" : 
-                                   notification.status === "failed" ? "Échec" : "En attente"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{rule?.name}</TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {history.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <Badge variant={item.type === "Email" ? "default" : "secondary"}>
+                                {item.type === "Email" ? <Mail className="h-3 w-3 mr-1" /> : <MessageSquare className="h-3 w-3 mr-1" />}
+                                {item.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{item.recipient}</TableCell>
+                            <TableCell className="max-w-xs truncate">{item.subject}</TableCell>
+                            <TableCell>{item.sentAt}</TableCell>
+                            <TableCell>{getStatusBadge(item.status)}</TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="templates" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Modèles de messages</CardTitle>
-                    <CardDescription>Templates pré-configurés pour différents types de notifications</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card className="p-4">
-                        <h3 className="font-semibold mb-2">Rappel de session</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Bonjour {{employeeName}}, votre formation "{{trainingName}}" aura lieu le {{date}} à {{time}} en {{location}}. N'oubliez pas de vous munir des documents requis.
-                        </p>
-                        <Button variant="outline" size="sm">Utiliser ce modèle</Button>
-                      </Card>
-
-                      <Card className="p-4">
-                        <h3 className="font-semibold mb-2">Candidature en attente</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Votre candidature pour la formation "{{trainingName}}" est en attente de confirmation. Merci de confirmer votre participation avant le {{deadline}}.
-                        </p>
-                        <Button variant="outline" size="sm">Utiliser ce modèle</Button>
-                      </Card>
-
-                      <Card className="p-4">
-                        <h3 className="font-semibold mb-2">Session terminée</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Merci d'avoir participé à la formation "{{trainingName}}". N'hésitez pas à laisser votre avis sur cette session.
-                        </p>
-                        <Button variant="outline" size="sm">Utiliser ce modèle</Button>
-                      </Card>
-
-                      <Card className="p-4">
-                        <h3 className="font-semibold mb-2">Demande de feedback</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Votre avis nous intéresse ! Merci d'évaluer la formation "{{trainingName}}" en cliquant sur le lien suivant : {{feedbackLink}}
-                        </p>
-                        <Button variant="outline" size="sm">Utiliser ce modèle</Button>
-                      </Card>
-                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -437,49 +386,72 @@ const NotificationsManagement = () => {
               <TabsContent value="settings" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Paramètres de notification</CardTitle>
-                    <CardDescription>Configuration générale des alertes</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Paramètres de notification
+                    </CardTitle>
+                    <CardDescription>Configuration des délais et fréquences d'envoi</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Notifications par email</h3>
-                        <p className="text-sm text-gray-600">Activer l'envoi d'emails automatiques</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Rappels de session</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label>Rappel J-7</Label>
+                            <Switch defaultChecked />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Label>Rappel J-3</Label>
+                            <Switch defaultChecked />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Label>Rappel J-1</Label>
+                            <Switch defaultChecked />
+                          </div>
+                        </div>
                       </div>
-                      <Switch defaultChecked />
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Notifications par SMS</h3>
-                        <p className="text-sm text-gray-600">Activer l'envoi de SMS automatiques</p>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Relances candidatures</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label>Relance après 3 jours</Label>
+                            <Switch defaultChecked />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Label>Relance finale J-2</Label>
+                            <Switch defaultChecked />
+                          </div>
+                        </div>
                       </div>
-                      <Switch defaultChecked />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="emailFrom">Adresse email expéditeur</Label>
-                      <Input id="emailFrom" defaultValue="noreply@formationpro.com" />
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold mb-4">Configuration SMTP</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="smtpServer">Serveur SMTP</Label>
+                          <Input id="smtpServer" placeholder="smtp.company.com" />
+                        </div>
+                        <div>
+                          <Label htmlFor="smtpPort">Port</Label>
+                          <Input id="smtpPort" placeholder="587" />
+                        </div>
+                        <div>
+                          <Label htmlFor="smtpUser">Utilisateur</Label>
+                          <Input id="smtpUser" placeholder="noreply@company.com" />
+                        </div>
+                        <div>
+                          <Label htmlFor="smtpPassword">Mot de passe</Label>
+                          <Input id="smtpPassword" type="password" />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="smsProvider">Fournisseur SMS</Label>
-                      <Select defaultValue="twilio">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="twilio">Twilio</SelectItem>
-                          <SelectItem value="orange">Orange Business</SelectItem>
-                          <SelectItem value="ovh">OVH Telecom</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex justify-end">
+                      <Button>Sauvegarder les paramètres</Button>
                     </div>
-
-                    <Button>
-                      <Send className="h-4 w-4 mr-2" />
-                      Envoyer un test
-                    </Button>
                   </CardContent>
                 </Card>
               </TabsContent>

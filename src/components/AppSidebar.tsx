@@ -9,7 +9,13 @@ import {
   Home,
   Settings,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  BarChart3,
+  Brain,
+  Euro,
+  Bell,
+  UserCheck
 } from "lucide-react";
 
 import {
@@ -50,6 +56,39 @@ const navigationItems = [
     title: "Sessions",
     url: "/sessions",
     icon: Calendar,
+  },
+  {
+    title: "Feedback",
+    url: "/feedback",
+    icon: MessageSquare,
+  },
+  {
+    title: "Statistiques",
+    url: "/statistics",
+    icon: BarChart3,
+  },
+];
+
+const managementItems = [
+  {
+    title: "Compétences & GPEC",
+    url: "/skills-management",
+    icon: Brain,
+  },
+  {
+    title: "Budget & Financement",
+    url: "/budget-management",
+    icon: Euro,
+  },
+  {
+    title: "Notifications",
+    url: "/notifications-management",
+    icon: Bell,
+  },
+  {
+    title: "Formateurs",
+    url: "/trainers-management",
+    icon: UserCheck,
   },
 ];
 
@@ -116,20 +155,22 @@ export function AppSidebar() {
 
         {state !== "collapsed" && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupLabel>Gestion & Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/settings"
-                      className={getNavClassName("/settings")}
-                    >
-                      <Settings className="h-5 w-5 mr-3" />
-                      <span>Paramètres</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {managementItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClassName(item.url)}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
