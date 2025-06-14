@@ -23,6 +23,8 @@ import SkillsManagement from "./pages/SkillsManagement";
 import BudgetManagement from "./pages/BudgetManagement";
 import NotificationsManagement from "./pages/NotificationsManagement";
 import TrainersManagement from "./pages/TrainersManagement";
+import Planning from "./pages/Planning";
+import Certificates from "./pages/Certificates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
           <Route path="/budget-management" element={<BudgetManagement />} />
           <Route path="/notifications-management" element={<NotificationsManagement />} />
           <Route path="/trainers-management" element={<TrainersManagement />} />
+          <Route path="/planning" element={<Planning />} />
+          <Route path="/certificates" element={<Certificates />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

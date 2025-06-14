@@ -6,6 +6,8 @@ import {
   Users,
   GraduationCap,
   Calendar,
+  CalendarDays,
+  Award,
   Home,
   Settings,
   ChevronDown,
