@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -17,7 +16,8 @@ import {
   Brain,
   Euro,
   Bell,
-  UserCheck
+  UserCheck,
+  FileText
 } from "lucide-react";
 
 import {
@@ -68,6 +68,21 @@ const navigationItems = [
     title: "Statistiques",
     url: "/statistics",
     icon: BarChart3,
+  },
+  {
+    title: "Planning",
+    url: "/planning",
+    icon: CalendarDays,
+  },
+  {
+    title: "Certificats",
+    url: "/certificates",
+    icon: Award,
+  },
+  {
+    title: "Rapports & Exports",
+    url: "/reports",
+    icon: FileText,
   },
 ];
 
