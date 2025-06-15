@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { format } from 'date-fns';
 import { Badge } from "@/components/Badge";
+
+type DateRange = {
+  from: Date | undefined;
+  to: Date | undefined;
+};
 
 export default function Reports() {
   const navigate = useNavigate();
@@ -253,7 +259,7 @@ export default function Reports() {
                         <TableCell>{item.participants}</TableCell>
                         <TableCell>{item.date}</TableCell>
                         <TableCell>
-                          <Badge variant={item.status === 'Terminée' ? 'default' : 'secondary'}>
+                          <Badge color={item.status === 'Terminée' ? 'green' : 'gray'}>
                             {item.status}
                           </Badge>
                         </TableCell>
