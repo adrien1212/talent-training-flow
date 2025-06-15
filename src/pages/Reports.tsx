@@ -10,13 +10,11 @@ import { ArrowLeft, Download, Filter, FileSpreadsheet, FileText } from "lucide-r
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { format } from 'date-fns';
+import { Badge } from "@/components/Badge";
 
 export default function Reports() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
-    from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);

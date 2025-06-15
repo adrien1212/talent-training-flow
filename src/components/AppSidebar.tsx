@@ -17,7 +17,9 @@ import {
   Euro,
   Bell,
   UserCheck,
-  FileText
+  FileText,
+  LifeBuoy,
+  CreditCard
 } from "lucide-react";
 
 import {
@@ -109,6 +111,19 @@ const managementItems = [
   },
 ];
 
+const administrationItems = [
+  {
+    title: "Facturation",
+    url: "/billing",
+    icon: CreditCard,
+  },
+  {
+    title: "Support",
+    url: "/support",
+    icon: LifeBuoy,
+  },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -176,6 +191,29 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {managementItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClassName(item.url)}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {state !== "collapsed" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {administrationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink
