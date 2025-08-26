@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import useSessionEnrollments from '@/hooks/useSessionEnrollments';
 import EnrollmentsTable from './EnrollmentsTable';
 import { SessionStatus } from '@/types/SessionStatus';
+import { useSessionsEnrollment } from '@/hooks/useSessionEnrollments';
 
 interface Props {
     trainingId?: number;
@@ -29,10 +29,10 @@ const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId }) => {
     });
 
     // Prepare queries for each tab
-    const allEnrollments = useSessionEnrollments({ trainingId, status: null, page: pageByTab.all });
-    const currentEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.Active, page: pageByTab.current });
-    const completedEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.Completed, page: pageByTab.completed });
-    const scheduledEnrollments = useSessionEnrollments({ trainingId, status: SessionStatus.NotStarted, page: pageByTab.scheduled });
+    const allEnrollments = useSessionsEnrollment({ trainingId, status: null, page: pageByTab.all });
+    const currentEnrollments = useSessionsEnrollment({ trainingId, status: SessionStatus.Active, page: pageByTab.current });
+    const completedEnrollments = useSessionsEnrollment({ trainingId, status: SessionStatus.Completed, page: pageByTab.completed });
+    const scheduledEnrollments = useSessionsEnrollment({ trainingId, status: SessionStatus.NotStarted, page: pageByTab.scheduled });
 
     const queriesByKey: Record<TabKey, { data?: any; isLoading: boolean }> = {
         all: { data: allEnrollments.data, isLoading: allEnrollments.isLoading },
@@ -81,6 +81,7 @@ const TrainingSessionEnrollmentTabs: React.FC<Props> = ({ trainingId }) => {
                 );
             })}
         </Tabs>
+
     );
 };
 

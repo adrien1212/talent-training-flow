@@ -1,7 +1,6 @@
 import { useQuery } from 'react-query';
 import api from '@/services/api';
 import { PageResponse } from '@/types/PageResponse';
-import { Feedback } from '@/types/Feedback';
 import { Training } from '@/types/Training';
 
 interface Options {
@@ -11,7 +10,12 @@ interface Options {
     size?: number;
 }
 
-function useTrainings({
+const trainingKey = (id?: number) => ['training', id] as const;
+
+/**
+ * GET
+ */
+export function useTrainings({
     departmentId,
     employeeId,
     page = 0,
@@ -41,4 +45,27 @@ function useTrainings({
     };
 }
 
-export default useTrainings
+export function useTraining(id?: number, enabled: boolean = true) {
+    return useQuery<Training, Error>(
+        trainingKey(id),
+        () => api.get<Training>(`/v1/trainings/${id}`).then(res => res.data),
+        {
+            enabled: !!id && enabled,
+            staleTime: 0,
+        }
+    );
+}
+
+/**
+ * COUNT
+ */
+export function useCountTrainings(enabled: boolean = true) {
+    return useQuery<number, Error>(
+        trainingKey(),
+        () => api.get<number>(`/v1/trainings/count`).then(res => res.data),
+        {
+            enabled: enabled,
+            staleTime: 0,
+        }
+    );
+}

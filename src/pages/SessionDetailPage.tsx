@@ -17,6 +17,31 @@ import FeedbackPending from "@/components/common/FeedbackPending";
 import SessionEnrollmentCard from "@/components/common/SessionEnrollmentTable";
 import { useSession } from "@/hooks/useSessions";
 import SignatureMatrix from "@/components/common/SignatureMatrix";
+import SlotSignatureTable from "@/components/common/SlotSignatureTable";
+import { useTrainer } from "@/hooks/useTrainer";
+
+
+const getStatusColor = (status: SessionDetail['status']) => {
+    const colors: Record<SessionDetail['status'], string> = {
+        NOT_STARTED: 'bg-blue-100 text-blue-800',
+        ACTIVE: 'bg-green-100 text-green-800',
+        COMPLETED: 'bg-gray-100 text-gray-800',
+        CANCELLED: 'bg-red-100 text-red-800',
+        DRAFT: 'bg-red-100 text-red-800'
+    };
+    return colors[status];
+};
+
+const getStatusLabel = (status: SessionDetail['status']) => {
+    const labels: Record<SessionDetail['status'], string> = {
+        NOT_STARTED: 'Programmée',
+        ACTIVE: 'En cours',
+        COMPLETED: 'Terminée',
+        CANCELLED: 'Annulée',
+        DRAFT: "Draft"
+    };
+    return labels[status];
+};
 
 const SessionDetailPage = () => {
     const { id } = useParams();
@@ -29,9 +54,20 @@ const SessionDetailPage = () => {
         error
     } = useSession(Number(id))
 
+    const {
+        data: trainer,
+        isLoading: isTrainerLoading,
+        isError: isTrainerError
+    } = useTrainer(Number(session?.trainerId),
 
-    if (isLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>
-    if (isError) return <div className="p-4 text-center text-red-500">Erreur de chargement</div>
+        // only run once session.trainerId is truthy
+        Boolean(session?.trainerId)
+    )
+
+    console.log(session?.trainerId)
+
+    if (isLoading || isTrainerLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>
+    if (isError || isTrainerError) return <div className="p-4 text-center text-red-500">Erreur de chargement</div>
 
     return (
         <SidebarProvider>
@@ -90,20 +126,22 @@ const SessionDetailPage = () => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Users className="h-4 w-4 text-gray-500" />
-
+                                        <label className="text-sm text-gray-600">Formateur</label>
+                                        <p className="font-medium">{trainer.firstName} {trainer.lastName}</p>
                                     </div>
                                 </div>
                                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <div>
                                             <label className="text-sm text-gray-600">Status</label>
-                                            <p className="font-medium">{session.status}</p>
                                         </div>
                                         <div className="mt-1">
                                             <ul className="list-disc list-inside">
                                                 {session.sessionStatusHistory.map((h) => (
                                                     <li key={h.id}>
-                                                        {h.status} - {new Date(h.changedAt).toLocaleDateString()}
+                                                        <Badge className={getStatusColor(session.status)}>
+                                                            {getStatusLabel(session.status)}
+                                                        </Badge> - {new Date(h.changedAt).toLocaleDateString()}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -116,7 +154,30 @@ const SessionDetailPage = () => {
                         {/* Liste des participants */}
                         <SessionEnrollmentCard sessionId={Number(id)} />
 
-                        <SignatureMatrix sessionId={Number(id)} />
+                        {/* Signatures */}
+                        {(session.status === SessionStatus.Active || session.status === SessionStatus.Completed) && (
+                            <Tabs defaultValue="matrix" className="space-y-4">
+                                <TabsList>
+                                    <TabsTrigger value="matrix" className="flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        Matrice des signatures
+                                    </TabsTrigger>
+                                    <TabsTrigger value="slot-signature" className="flex items-center gap-2">
+                                        <Send className="h-4 w-4" />
+                                        Créneaux à signer
+                                    </TabsTrigger>
+                                </TabsList>
+
+                                <TabsContent value="matrix">
+                                    <SignatureMatrix sessionId={Number(id)} />
+                                </TabsContent>
+
+                                <TabsContent value="slot-signature">
+                                    <SlotSignatureTable sessionId={Number(id)} />
+                                </TabsContent>
+                            </Tabs>
+                        )}
+
 
                         {/* Avis (si session terminée) */}
                         {session.status === SessionStatus.Completed && (

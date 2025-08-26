@@ -1,3 +1,4 @@
+// components/FeedbackPending.tsx
 import React, { useEffect, useState } from 'react';
 import {
     Table,
@@ -11,44 +12,72 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import useSessionEnrollments from '@/hooks/useSessionEnrollments';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '../ui/card';
 import { SessionStatus } from '@/types/SessionStatus';
+import { useSessionsEnrollment } from '@/hooks/useSessionEnrollments';
+import Pagination from '../pagination/Pagination';
+import { useFeebackRelance } from '@/hooks/useFeedback';
+import { SessionEnrollment } from '@/types/SessionEnrollment';
+import { toast } from '../ui/use-toast';
 
 interface PendingFeedbackTableProps {
-    employeeId?: number;
-    trainingId?: number;
-    sessionId?: number;
     pageSize?: number;
 }
 
-const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    return parts.map(part => part.charAt(0)).join('').toUpperCase();
-};
+const getInitials = (name: string) =>
+    name
+        .split(' ')
+        .map(part => part.charAt(0))
+        .join('')
+        .toUpperCase();
 
-const FeedbackPending: React.FC<PendingFeedbackTableProps> = ({
-    employeeId,
-    trainingId,
-    sessionId,
-    pageSize = 10,
-}) => {
-    const [page, setPage] = useState<number>(0);
-
-    const { data, isLoading, error } = useSessionEnrollments({
-        trainingId,
-        sessionId,
-        employeeId,
-        status: SessionStatus.Active,
-        completed: false,
+const FeedbackPending: React.FC<PendingFeedbackTableProps> = () => {
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10)
+    const {
+        data,
+        isLoading,
+        error,
+    } = useSessionsEnrollment({
+        status: SessionStatus.Completed,
+        isFeedbackGiven: false,
         page,
         size: pageSize,
     });
 
-    function onSendReminder(employeeId: number): void {
-        // TODO: call backend to resend email reminder
-        console.log('Envoyer relance pour employeeId:', employeeId);
+    const feedbackRelance = useFeebackRelance();
+
+    // normalize into safe defaults
+    const sessionsEnrollment = data?.content ?? [];
+    const totalPages = data?.totalPages ?? 0;
+
+    function onSendReminder(sessionEnrollment: SessionEnrollment) {
+        console.log('Envoyer relance pour employeeId:', sessionEnrollment);
+        feedbackRelance.mutate(sessionEnrollment.feedback.id, { onSuccess });
     }
+
+    const onSuccess = () => {
+        toast({ title: 'Relancé effectuée' });
+    };
+
+    if (isLoading)
+        return (
+            <div className="p-4 text-center text-gray-500">Chargement…</div>
+        );
+
+    // In case some other error happened (not a 204), you can still show an error
+    if (error)
+        return (
+            <div className="p-4 text-center text-red-500">
+                Une erreur est survenue.
+            </div>
+        );
 
     return (
         <Card>
@@ -69,19 +98,22 @@ const FeedbackPending: React.FC<PendingFeedbackTableProps> = ({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {!isLoading && data.content.length > 0 ? (
-                            data.content.map(pending => (
+                        {sessionsEnrollment.length > 0 ? (
+                            sessionsEnrollment.map(pending => (
                                 <TableRow key={pending.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar>
                                                 <AvatarFallback className="bg-orange-100 text-orange-700">
-                                                    {getInitials(pending.employee.firstName + ' ' + pending.employee.lastName)}
+                                                    {getInitials(
+                                                        `${pending.employee.firstName} ${pending.employee.lastName}`
+                                                    )}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <div className="font-medium">
-                                                    {pending.employee.firstName} {pending.employee.lastName}
+                                                    {pending.employee.firstName}{' '}
+                                                    {pending.employee.lastName}
                                                 </div>
                                                 <div className="text-sm text-gray-600">
                                                     {pending.employee.email}
@@ -90,14 +122,18 @@ const FeedbackPending: React.FC<PendingFeedbackTableProps> = ({
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline">{pending.session.training.title}</Badge>
+                                        <Badge variant="outline">
+                                            {pending.session.training.title}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>{pending.session.startDate}</TableCell>
                                     <TableCell>
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => onSendReminder(pending.employee.id)}
+                                            onClick={() =>
+                                                onSendReminder(pending)
+                                            }
                                             className="flex items-center gap-1"
                                         >
                                             <Send className="h-3 w-3" />
@@ -108,7 +144,7 @@ const FeedbackPending: React.FC<PendingFeedbackTableProps> = ({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-4">
+                                <TableCell colSpan={4} className="text-center py-4">
                                     Aucun feedback en attente.
                                 </TableCell>
                             </TableRow>
@@ -117,27 +153,13 @@ const FeedbackPending: React.FC<PendingFeedbackTableProps> = ({
                 </Table>
 
                 {/* Pagination */}
-                {!isLoading && !error && data.totalPages > 1 && (
-                    <div className="flex justify-between items-center p-4">
-                        <Button
-                            disabled={page <= 0}
-                            onClick={() => setPage(p => Math.max(p - 1, 0))}
-                        >
-                            Previous
-                        </Button>
-                        <span>
-                            Page {page + 1} of {data.totalPages}
-                        </span>
-                        <Button
-                            disabled={page + 1 >= data.totalPages}
-                            onClick={() =>
-                                setPage(p => Math.min(p + 1, data.totalPages - 1))
-                            }
-                        >
-                            Next
-                        </Button>
-                    </div>
-                )}
+                <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                />
             </CardContent>
         </Card>
     );

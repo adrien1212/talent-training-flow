@@ -1,5 +1,5 @@
 // src/components/EmployeeTable.tsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,7 +17,10 @@ import { useDepartments } from '@/hooks/useDepartments'
 import {
     useEmployees,
     useDeleteEmployee,
+    useEmployeesSearch,
 } from '@/hooks/useEmployees'
+import { useCurrentPlan } from '@/hooks/usePlan'
+import Pagination from '../pagination/Pagination'
 
 interface Props {
     departmentId?: number
@@ -31,12 +34,39 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
 
-    // — READ
+    // Search state
+    const [searchTerm, setSearchTerm] = useState('')
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+
+    // Debounce search input (300ms)
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm)
+            setPage(0)
+        }, 300)
+        return () => clearTimeout(handler)
+    }, [searchTerm])
+
+    const {
+        data: plan,
+        isLoading: isPlanLoading,
+        isError: isPlanError,
+    } = useCurrentPlan()
+
+    // — READ with search filter after min length
     const {
         data: empResponse,
         isLoading: isEmpLoading,
         error: empError,
-    } = useEmployees({ departmentId, sessionId, page, size: pageSize })
+    } = useEmployeesSearch({
+        departmentId,
+        sessionId,
+        page,
+        size: pageSize,
+        firstName: debouncedSearchTerm.length >= 3 ? debouncedSearchTerm : undefined,
+        lastName: debouncedSearchTerm.length >= 3 ? debouncedSearchTerm : undefined,
+        email: debouncedSearchTerm.length >= 3 ? debouncedSearchTerm : undefined,
+    })
 
     // — DELETE
     const {
@@ -51,8 +81,8 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
         error: deptError,
     } = useDepartments()
 
-    const items: Employee[] = empResponse?.content ?? []
-    const departments: Department[] = deptResponse?.content ?? []
+    const items = empResponse?.content ?? []
+    const departments = deptResponse?.content ?? []
     const totalPages: number = empResponse?.totalPages ?? 0
 
     const busy = isDeleting || isDeptLoading
@@ -82,11 +112,23 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
         }
     }
 
-    if (isEmpLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>
-    if (empError || deptError) return <div className="p-4 text-center text-red-500">Erreur de chargement</div>
+    if (isEmpLoading || isPlanLoading) return <div className="p-4 text-center text-gray-500">Chargement…</div>
+    if (empError || deptError || isPlanError) return <div className="p-4 text-center text-red-500">Erreur de chargement</div>
+
 
     return (
         <>
+            {/* Search Box */}
+            <div className="p-4">
+                <input
+                    type="text"
+                    placeholder="Rechercher (min 3 caractères)..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="border rounded p-2 w-full mb-4"
+                />
+            </div>
+
             {items.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">Aucun employé trouvé.</div>
             ) : (
@@ -96,8 +138,6 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
                             <TableHead>Employé</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Code Employé</TableHead>
-                            <TableHead>Téléphone</TableHead>
-                            <TableHead>Département</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -132,15 +172,6 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
                                         {emp.codeEmployee}
                                     </div>
                                 </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4" />
-                                        {emp.phone}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">{emp.department.name}</Badge>
-                                </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-1">
                                         <Button
@@ -170,39 +201,14 @@ export default function EmployeeTable({ departmentId, sessionId }: Props) {
             )}
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4 p-4">
-                <div className="text-gray-600">
-                    Page {page + 1} sur {totalPages}
-                </div>
-                <div className="flex gap-2">
-                    <Button disabled={page === 0} onClick={() => setPage(p => Math.max(p - 1, 0))}>
-                        Précédent
-                    </Button>
-                    <Button disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>
-                        Suivant
-                    </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="pageSizeSelect">Taille :</Label>
-                    <Select
-                        id="pageSizeSelect"
-                        value={pageSize.toString()}
-                        onValueChange={value => { setPageSize(Number(value)); setPage(0) }}
-                        disabled={busy}
-                    >
-                        <SelectTrigger className="w-24">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[5, 10, 20, 50].map(s => (
-                                <SelectItem key={s} value={s.toString()}>
-                                    {s} / page
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                busy={busy}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+            />
 
             {/* Create / Edit Dialog */}
             <EmployeeDialog

@@ -24,6 +24,8 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+       "react/jsx-uses-react": 0,
+      "react/react-in-jsx-scope": 0
     },
   }
 );

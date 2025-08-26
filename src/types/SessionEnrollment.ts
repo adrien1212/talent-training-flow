@@ -12,4 +12,5 @@ export interface SessionEnrollment {
     rating: number;
     comment: string;
   };
+  sessionEnrollmentToken: string;
 }

@@ -1,3 +1,4 @@
+import { ModeSignature } from "./ModeSignature";
 import { SessionStatus } from "./SessionStatus";
 import { SessionStatusHistory } from "./SessionStatusHistory";
 
@@ -13,4 +14,6 @@ export interface SessionDetail {
     title: string;
   }
   sessionStatusHistory: SessionStatusHistory[]
+  trainerId: number;
+  modeSignature: ModeSignature
 }

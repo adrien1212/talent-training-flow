@@ -21,21 +21,26 @@ import { NewSession } from '@/types/NewSession';
 import { SessionStatus } from '@/types/SessionStatus';
 import { useCreateSession, useUpdateSession } from '@/hooks/useSessions';
 import { toast } from '@/components/ui/use-toast';
-import useTrainings from '@/hooks/useTrainings';
 import { Training } from '@/types/Training';
+import { Trainer } from '@/types/Trainer';
+import { ModeSignature } from '@/types/ModeSignature';
+import { useTrainings } from '@/hooks/useTrainings';
 
 interface SessionDialogProps {
     open: boolean;
     defaultTrainingId?: number;
     session?: SessionDetail | null;
+    trainers: Trainer[]
     onClose: () => void;
 }
 
 type FormState = {
     trainingId: number | null;
+    trainerId: number | null;
     startDate: string;
     endDate: string;
     location: string;
+    modeSignature: ModeSignature;
     status: SessionStatus;
 };
 
@@ -43,15 +48,18 @@ export default function SessionDialog({
     defaultTrainingId,
     open,
     session,
+    trainers,
     onClose,
 }: SessionDialogProps) {
     const isEdit = Boolean(session);
     const initialTrainingId = defaultTrainingId ? defaultTrainingId : null;
     const [formData, setFormData] = useState<FormState>({
         trainingId: null,
+        trainerId: null,
         startDate: '',
         endDate: '',
         location: '',
+        modeSignature: ModeSignature.GLOBAL,
         status: SessionStatus.Draft,
     });
 
@@ -60,17 +68,21 @@ export default function SessionDialog({
         if (session) {
             setFormData({
                 trainingId: session.training.id,
+                trainerId: session.trainerId,
                 startDate: session.startDate,
                 endDate: session.endDate,
                 location: session.location,
+                modeSignature: session.modeSignature,
                 status: session.status,
             });
         } else {
             setFormData({
                 trainingId: initialTrainingId,
+                trainerId: null,
                 startDate: '',
                 endDate: '',
                 location: '',
+                modeSignature: ModeSignature.GLOBAL,
                 status: SessionStatus.Draft,
             });
         }
@@ -102,6 +114,8 @@ export default function SessionDialog({
             endDate: formData.endDate,
             location: formData.location,
             status: formData.status,
+            modeSignature: formData.modeSignature,
+            trainerId: formData.trainerId
         };
 
         const onSuccess = () => {
@@ -217,6 +231,53 @@ export default function SessionDialog({
                                 {Object.values(SessionStatus).map((stat) => (
                                     <SelectItem key={stat} value={stat}>
                                         {stat}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="status">Signature</Label>
+                        <Select
+                            value={formData.modeSignature}
+                            onValueChange={(val) =>
+                                setFormData({
+                                    ...formData,
+                                    modeSignature: val as ModeSignature,
+                                })
+                            }
+                            disabled={busy}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un mode de signature" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.values(ModeSignature).map((modeSignature) => (
+                                    <SelectItem key={modeSignature} value={modeSignature}>
+                                        {modeSignature}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Department */}
+                    <div>
+                        <Label htmlFor="department">Formateur</Label>
+                        <Select
+                            value={String(formData.trainerId)}
+                            onValueChange={val =>
+                                setFormData(prev => ({ ...prev, trainerId: Number(val) }))
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un département" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {trainers.map(trainer => (
+                                    <SelectItem key={trainer.id} value={String(trainer.id)}>
+                                        {trainer.firstName} {trainer.lastName}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

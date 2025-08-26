@@ -9,7 +9,15 @@ import {
   Home,
   Settings,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Euro,
+  Pen,
+  ChartNoAxesCombined,
+  Milestone,
+  Bell,
+  FileText,
+  CreditCard,
+  LifeBuoy
 } from "lucide-react";
 
 import {
@@ -49,22 +57,63 @@ const navigationItems = [
   {
     title: "Sessions",
     url: "/sessions",
-    icon: Calendar,
+    icon: Milestone,
   },
   {
     title: "Feedbacks",
     url: "/feedbacks",
     icon: Calendar,
   },
-  {
-    title: "Statistiques",
-    url: "/statistics",
-    icon: Calendar,
-  },
+  /*  {
+      title: "Certificats",
+      url: "/certificates",
+      icon: Euro,
+    },*/
   {
     title: "Give feedback",
     url: "/give-feedback",
-    icon: Calendar,
+    icon: Pen,
+  },
+];
+
+const managementItems = [
+  {
+    title: "Statistiques",
+    url: "/statistics",
+    icon: ChartNoAxesCombined,
+  },
+  {
+    title: "Notification",
+    url: "/notifications",
+    icon: Bell,
+  },
+  {
+    title: "Formateurs",
+    url: "/trainers",
+    icon: Users,
+  },
+  {
+    title: "Budget",
+    url: "/budget",
+    icon: Euro,
+  },
+  {
+    title: "Rapports & Exports",
+    url: "/reports",
+    icon: FileText,
+  },
+];
+
+const administrationItems = [
+  {
+    title: "Facturation",
+    url: "/billing",
+    icon: CreditCard,
+  },
+  {
+    title: "Support",
+    url: "/support",
+    icon: LifeBuoy,
   },
 ];
 
@@ -131,20 +180,45 @@ export function AppSidebar() {
 
         {state !== "collapsed" && (
           <SidebarGroup>
+            <SidebarGroupLabel>Gestion & Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {managementItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClassName(item.url)}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {state !== "collapsed" && (
+          <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/settings"
-                      className={getNavClassName("/settings")}
-                    >
-                      <Settings className="h-5 w-5 mr-3" />
-                      <span>Paramètres</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {administrationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClassName(item.url)}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

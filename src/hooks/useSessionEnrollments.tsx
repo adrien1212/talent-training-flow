@@ -9,64 +9,59 @@ interface UseSessionEnrollmentsOptions {
     sessionId?: number;
     employeeId?: number;
     status?: SessionStatus;
-    completed?: boolean;
+    isFeedbackGiven?: boolean;
     page?: number;
     size?: number;
+    enabled?: boolean
 }
 
-/**
- * Fetches session enrollments, optionally filtered by training, session, employee, status.
- * Automatically disabled until sessionId is provided.
- */
-function useSessionEnrollments({
+const sessionEnrollmentsKeys = ({
     trainingId,
     sessionId,
     employeeId,
     status,
-    completed,
+    isFeedbackGiven,
     page = 0,
     size = 10,
-}: UseSessionEnrollmentsOptions) {
-    const queryKey = [
-        'sessionEnrollments',
-        { trainingId, sessionId, employeeId, status, completed, page, size },
-    ];
+}: UseSessionEnrollmentsOptions) =>
+    ['sessionEnrollments', trainingId, sessionId, employeeId, status, isFeedbackGiven, page, size] as const
 
-    const fetchEnrollments = () =>
-        api
-            .get<PageResponse<SessionEnrollment>>('/v1/sessions-enrollment', {
+export function useSessionsEnrollment(options: UseSessionEnrollmentsOptions = {}) {
+    const {
+        trainingId,
+        sessionId,
+        employeeId,
+        status,
+        isFeedbackGiven,
+        page = 0,
+        size = 10,
+        enabled = true
+    } = options
+    const key = sessionEnrollmentsKeys({ trainingId, sessionId, employeeId, status, isFeedbackGiven, page, size })
+
+
+    return useQuery<PageResponse<SessionEnrollment>, Error>(
+        key,
+        () =>
+            api.get<PageResponse<SessionEnrollment>>('/v1/sessions-enrollment', {
                 params: {
                     trainingId,
                     sessionId,
                     employeeId,
                     sessionStatus: status,
-                    completed,
+                    isFeedbackGiven,
                     page,
                     size,
                 },
             })
-            .then(res => res.data);
-
-    const result = useQuery<PageResponse<SessionEnrollment>>(
-        queryKey,
-        fetchEnrollments,
+                .then(res => res.data),
         {
-            keepPreviousData: true
+            enabled,
+            staleTime: 0,
+            cacheTime: 0,
+            refetchOnMount: 'always',
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
         }
-    );
-
-    return {
-        /**
-         * Page response containing enrollment entries
-         */
-        data: result.data,
-        /** True when loading enrollments */
-        isLoading: result.isLoading,
-        /** Error if fetch failed */
-        isError: result.isError,
-        /** Function to manually refetch enrollments */
-        refetch: result.refetch,
-    };
+    )
 }
-
-export default useSessionEnrollments;

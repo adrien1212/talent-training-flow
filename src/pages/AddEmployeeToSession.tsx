@@ -8,21 +8,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Users, Plus, Trash2 } from "lucide-react";
@@ -32,11 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useDepartments } from "@/hooks/useDepartments";
 import { useSessions } from "@/hooks/useSessions";
-import useSessionEnrollments from "@/hooks/useSessionEnrollments";
 import { Employee } from "@/types/Employee";
 import { SessionEnrollment } from "@/types/SessionEnrollment";
 import api from "@/services/api";
 import { SessionStatus } from "@/types/SessionStatus";
+import { useSessionsEnrollment } from "@/hooks/useSessionEnrollments";
 
 export default function AddEmployeeToSession() {
     const { toast } = useToast();
@@ -69,7 +54,7 @@ export default function AddEmployeeToSession() {
         isLoading: isEnrollmentsLoading,
         error: isEnrollmentsError,
         refetch: refetchEnrollments,
-    } = useSessionEnrollments({ sessionId: selectedSession });
+    } = useSessionsEnrollment({ sessionId: selectedSession });
 
     // When session changes, update participants
     useEffect(() => {
@@ -252,7 +237,7 @@ export default function AddEmployeeToSession() {
                                 </CardTitle>
                                 <CardDescription>
                                     {selectedSession
-                                        ? `Session: ${sessionsData.content.find((s) => s.id === selectedSession)?.trainingName}`
+                                        ? `Session: ${sessionsData.content.find((s) => s.id === selectedSession)?.training.title}`
                                         : "Sélectionnez une session"}
                                 </CardDescription>
                             </CardHeader>
@@ -260,7 +245,7 @@ export default function AddEmployeeToSession() {
                                 {selectedSession ? (
                                     <div className="space-y-2 max-h-96 overflow-y-auto">
                                         {sessionParticipants.map((se) => (
-                                            <div key={se.employee.id} className="flex items-center justify-between p-2 border rounded-lg">
+                                            <div key={se.id} className="flex items-center justify-between p-2 border rounded-lg">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarFallback className="bg-green-100 text-green-700 text-xs">
@@ -292,3 +277,4 @@ export default function AddEmployeeToSession() {
         </SidebarProvider>
     );
 }
+

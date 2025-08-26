@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,118 +5,58 @@ import { Users, Building2, GraduationCap, Calendar } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import api from "@/services/api";
-import axios from "axios";
-import { useToast } from "@/hooks/use-toast";
 import { SessionDetail } from "@/types/SessionDetail";
+import { useCountEmployees } from "@/hooks/useEmployees";
+import { useCountDepartments } from "@/hooks/useDepartments";
+import { useCountTrainings } from "@/hooks/useTrainings";
+import { useCountSessions } from "@/hooks/useSessions";
+import { SessionStatus } from "@/types/SessionStatus";
+import { useCurrentPlan } from "@/hooks/usePlan";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   // 1) Set up state to hold the array of stat-objects
+  const navigate = useNavigate();
   const [recentSessions, setRecentSessions] = useState<SessionDetail[]>([]);
-  const [stats, setStats] = useState([
-    // you can keep these as placeholders (or start with an empty array: [])
-    {
-      title: "Total Employés",
-      value: "--",
-      description: "Actifs dans l'entreprise",
-      icon: Users,
-      color: "text-blue-600",
-    },
-    {
-      title: "Départements",
-      value: "--",
-      description: "Départements actifs",
-      icon: Building2,
-      color: "text-green-600",
-    },
-    {
-      title: "Formations",
-      value: "--",
-      description: "Formations disponibles",
-      icon: GraduationCap,
-      color: "text-purple-600",
-    },
-    {
-      title: "Sessions",
-      value: "--",
-      description: "Sessions programmées",
-      icon: Calendar,
-      color: "text-orange-600",
-    },
-  ]);
 
-  // 2) On mount, fetch the real numbers from the API
-  useEffect(() => {
-    const fetchGlobalStats = async () => {
-      try {
-        // Call your backend endpoint
-        const response = await api.get("/v1/statistics/global");
-        // Assuming the response.data has this shape:
-        // {
-        //   totalEmployees: number,
-        //   totalDepartments: number,
-        //   totalTrainings: number,
-        //   totalSessions: number
-        // }
-        const data = response.data;
+  const {
+    data: plan,
+    isLoading: isPlanLoading,
+    isError: isPlanError
+  } = useCurrentPlan()
 
-        // 3) Remap fields into the same shape that your <Card> loop expects
-        //    (i.e. title, value, description, icon, color).
-        const newStats = [
-          {
-            title: "Total Employés",
-            value: data.totalEmployees.toString(),
-            description: "Actifs dans l'entreprise",
-            icon: Users,
-            color: "text-blue-600",
-          },
-          {
-            title: "Départements",
-            value: data.totalDepartments.toString(),
-            description: "Départements actifs",
-            icon: Building2,
-            color: "text-green-600",
-          },
-          {
-            title: "Formations",
-            value: data.totalTrainings.toString(),
-            description: "Formations disponibles",
-            icon: GraduationCap,
-            color: "text-purple-600",
-          },
-          {
-            title: "Sessions",
-            value: data.totalSessions.toString(),
-            description: "Sessions programmées",
-            icon: Calendar,
-            color: "text-orange-600",
-          },
-        ];
+  const {
+    data: employeeNumber,
+    isLoading: isEmployeeNumberLoading,
+    isError: isEmployeeNumberError
+  } = useCountEmployees()
 
-        setStats(newStats);
-      } catch (err) {
-        console.error("Erreur lors du fetch des statistiques globales :", err);
-        // Optionnel : garder les valeurs "--" ou afficher un message d'erreur à l'utilisateur
-      }
-    };
+  const {
+    data: departmentNumber,
+    isLoading: isDepartmentNumberLoading,
+    isError: isDepartmentNumberError
+  } = useCountDepartments()
 
-    fetchGlobalStats();
-  }, []); // <-- appelé une seule fois au montage
+  const {
+    data: trainingNumber,
+    isLoading: isTrainingNumberLoading,
+    isError: isTrainingNumberError
+  } = useCountTrainings()
 
-  // 4) The rest of your component stays the same; it just maps over `stats`
-  //    (which now comes from the API instead of being hard-coded).
-  useEffect(() => {
-    const fetchRecentSessions = async () => {
-      try {
-        const response = await api.get("/v1/sessions?sessionStatus=COMPLETED");
-        setRecentSessions(response.data.content);
-        console.log(recentSessions)
-      } catch {
-        
-      }
-    };
+  const {
+    data: sessionNumber,
+    isLoading: isSessionNumberLoading,
+    isError: isSessionNumberError
+  } = useCountSessions(SessionStatus.NotStarted)
 
-    fetchRecentSessions();
-  }, []);
+  if (isEmployeeNumberLoading || isDepartmentNumberLoading || isTrainingNumberLoading || isSessionNumberLoading || isPlanLoading) {
+    return <div>Chargement</div>
+  }
+
+  if (isEmployeeNumberError || isDepartmentNumberError || isTrainingNumberError || isSessionNumberError || isPlanError) {
+    return <div>Error</div>
+  }
 
   return (
     <SidebarProvider>
@@ -131,6 +70,7 @@ const Index = () => {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Gestion des Formations</h1>
                   <p className="text-gray-600">Tableau de bord principal</p>
+                  <Badge className="bg-blue-100 text-blue-800">{plan.name} - {employeeNumber}/{plan.maxEmployees}</Badge>
                 </div>
               </div>
             </div>
@@ -139,60 +79,58 @@ const Index = () => {
           <div className="p-6 space-y-6">
             {/* Statistics Cards (dynamically from `stats`) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
-                <Card key={index} className="transition-all hover:shadow-lg hover:-translate-y-1">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      {stat.title}
-                    </CardTitle>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card className="transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/employees`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Total Employés
+                  </CardTitle>
+                  <Users className={`h-5 w-5 text-blue-600`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900">{employeeNumber}</div>
+                  <p className="text-xs text-gray-500 mt-1">Actifs dans l'entreprise</p>
+                </CardContent>
+              </Card>
+              <Card className="transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/departments`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Départements
+                  </CardTitle>
+                  <Building2 className={`h-5 w-5 text-green-600`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900">{departmentNumber}</div>
+                  <p className="text-xs text-gray-500 mt-1">Départements actifs</p>
+                </CardContent>
+              </Card>
+              <Card className="transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/trainings`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Formations
+                  </CardTitle>
+                  <GraduationCap className={`h-5 w-5 text-purple-600`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900">{trainingNumber}</div>
+                  <p className="text-xs text-gray-500 mt-1">Formations disponibles</p>
+                </CardContent>
+              </Card>
+              <Card className="transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/sessions`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    Sessions
+                  </CardTitle>
+                  <Building2 className={`h-5 w-5 text-orange-600`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900">{sessionNumber}</div>
+                  <p className="text-xs text-gray-500 mt-1">Sessions programmées</p>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Recent Trainings (unchanged) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-blue-600" />
-                  Formations Récentes
-                </CardTitle>
-                <CardDescription>
-                  Dernières formations programmées dans votre organisation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentSessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{session.startDate}</h3>
-                        <p className="text-sm text-gray-600">{session.startDate}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-gray-900">{session.startDate}</p>
-                        <p className="text-xs text-gray-600">{session.startDate} participants</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 pt-4 border-t">
-                  <Button variant="outline" className="w-full">
-                    Voir toutes les formations
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Quick Actions (unchanged) */}
+            {/* Quick Actions (unchanged) 
             <Card>
               <CardHeader>
                 <CardTitle>Actions Rapides</CardTitle>
@@ -216,7 +154,7 @@ const Index = () => {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card>*/}
           </div>
         </main>
       </div>

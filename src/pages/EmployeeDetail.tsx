@@ -13,9 +13,10 @@ import api from "@/services/api";
 import { SessionEnrollment } from "@/types/SessionEnrollment";
 import { PageResponse } from "@/types/PageResponse";
 import { SessionStatus } from "@/types/SessionStatus";
-import useSessionEnrollments from "@/hooks/useSessionEnrollments";
-import EmployeeSessionsHistory from "@/components/common/EmployeeSessionsHistory";
+import EmployeeSessionsEnrollmentHistory from "@/components/common/EmployeeSessionsEnrollmentHistory";
 import { useEmployee } from "@/hooks/useEmployees";
+import { useSessionsEnrollment } from "@/hooks/useSessionEnrollments";
+import SessionsTabs from "@/components/common/SessionsTabs";
 
 const EmployeeDetail = () => {
     const { id } = useParams();
@@ -25,7 +26,7 @@ const EmployeeDetail = () => {
         data: sessionsEnrollment,
         isLoading: isSessionEnrollmentLoading,
         error: sessionEnrollmentError,
-    } = useSessionEnrollments({ employeeId: Number(id) })
+    } = useSessionsEnrollment({ employeeId: Number(id) })
 
     const {
         data: employee,
@@ -79,9 +80,9 @@ const EmployeeDetail = () => {
                                 </Avatar>
                                 <div>
                                     <h1 className="text-2xl font-bold text-gray-900">
-                                        {employee.firstName} {employee.lastName} - {employee.codeEmployee}
+                                        {employee.firstName} {employee.lastName}
                                     </h1>
-                                    <p className="text-gray-600">{employee.department.name} - {employee.department.name}</p>
+                                    <p className="text-gray-600">{employee.department.name}</p>
                                 </div>
                             </div>
                         </div>
@@ -99,17 +100,17 @@ const EmployeeDetail = () => {
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div className="flex items-center gap-2">
+                                        <Avatar className="h-4 w-4 text-gray-500" />
+                                        <div>
+                                            <label className="text-sm text-gray-600">Nom Prénom</label>
+                                            <p className="font-medium">{employee.codeEmployee} - {employee.firstName} {employee.lastName}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
                                         <Mail className="h-4 w-4 text-gray-500" />
                                         <div>
                                             <label className="text-sm text-gray-600">Email</label>
                                             <p className="font-medium">{employee.email}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4 text-gray-500" />
-                                        <div>
-                                            <label className="text-sm text-gray-600">Téléphone</label>
-                                            <p className="font-medium">{employee.phone}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -135,14 +136,11 @@ const EmployeeDetail = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <EmployeeSessionsHistory items={sessionsEnrollment.content} page={0} totalPages={0} loading={false} onPageChange={function (newPage: number): void {
+                                <EmployeeSessionsEnrollmentHistory items={sessionsEnrollment.content} page={0} totalPages={0} loading={false} onPageChange={function (newPage: number): void {
                                     throw new Error("Function not implemented.");
                                 }} />
                             </CardContent>
                         </Card>
-
-
-
 
 
                         {/* Statistiques */}
