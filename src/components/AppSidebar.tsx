@@ -86,6 +86,11 @@ const navigationItems = [
     url: "/reports",
     icon: FileText,
   },
+  {
+    title: "Roadmaps",
+    url: "/roadmaps",
+    icon: FileText,
+  },
 ];
 
 const managementItems = [

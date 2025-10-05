@@ -13,14 +13,9 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { format } from 'date-fns';
 import { Badge } from "@/components/Badge";
 
-type DateRange = {
-  from: Date | undefined;
-  to: Date | undefined;
-};
-
 export default function Reports() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({ from: undefined, to: undefined });
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -87,12 +82,16 @@ export default function Reports() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Période */}
+                 {/* Période */}
                 <div>
                   <Label className="text-base font-medium">Période</Label>
                   <DatePickerWithRange
-                    date={dateRange}
-                    onDateChange={setDateRange}
+                    date={dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined}
+                    onDateChange={(date) => {
+                      if (date?.from && date?.to) {
+                        setDateRange({ from: date.from, to: date.to });
+                      }
+                    }}
                     className="mt-2"
                   />
                 </div>
